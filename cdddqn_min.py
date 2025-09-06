@@ -1,17 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-CDDDQN minimal example (PyTorch)
+CDDDQN: Constrained Deep Double Dueling Q-Network
+
+A PyTorch implementation for constrained reinforcement learning in grid environments.
+The agent learns to navigate a 5×5 grid world while avoiding hazards and maximizing rewards.
+
+Features:
 - Continuous states (normalized coords), discrete actions (U,R,D,L)
-- Invalid Action Masking (IAM)
-- Prioritized Experience Replay (PER, proportional)
-- Dueling reward head + cost head
-- Double DQN target
-- Lagrangian constraint with lambda update
+- Invalid Action Masking (IAM) - prevents invalid moves
+- Prioritized Experience Replay (PER, proportional) - efficient learning
+- Dueling reward head + cost head - separate value/advantage streams
+- Double DQN target - stable learning
+- Lagrangian constraint with lambda update - balances reward vs cost
 - Matplotlib plots: reward, cost, lambda & estimated cost
+
+Environment:
+- 5×5 GridWorld with walls and hazards
+- Start: (0,0), Goal: (4,4)
+- Reward: +10 (goal), -1 (step)
+- Cost: +1 (hazard), 0 (normal)
 
 Usage:
   pip install torch matplotlib numpy
   python cdddqn_min.py
+
+Author: KOKIMATSUTANI
+License: MIT
 """
 
 import math, random, time
