@@ -1,85 +1,53 @@
-# CDDDQN: Constrained Deep Double Dueling Q-Network
+# 🚋 Tram Delay Reduction via GTFS × SUMO × Flow × RL
 
-A PyTorch implementation of CDDDQN for constrained reinforcement learning in grid environments.
+## Overview
+This repository explores **adaptive traffic signal priority** for trams using a combination of:  
+- **GTFS / GTFS-RT**: Real-world transit schedule and real-time delay data  
+- **SUMO**: Microscopic traffic simulation engine  
+- **Flow**: Reinforcement learning framework wrapping SUMO (Gym API)  
+- **Deep RL**: Algorithms such as DQN/DDQN to optimize signal control  
 
-## 🎯 Overview
+The workflow follows a **data science pipeline**:  
+1. **Data ingestion** (GTFS, GTFS-RT)  
+2. **Preprocessing & normalization** (Parquet, append-only, statistics)  
+3. **Simulation setup** (SUMO networks, Flow environments)  
+4. **Model training** (baselines vs RL agents)  
+5. **Evaluation & visualization** (delay, queue length, reward curves)  
 
-This project implements a **Constrained Deep Double Dueling Q-Network (CDDDQN)** that learns to navigate a 5×5 grid world while avoiding hazards and maximizing rewards.
+Future extensions include multi-junction networks, advanced RL, and MLOps/Cloud readiness.
 
-## 🏗️ Architecture
+---
 
-- **Environment**: 5×5 GridWorld with walls and hazards
-- **Actions**: 4-directional movement (Up, Right, Down, Left)
-- **State**: Normalized coordinates [0,1]
-- **Reward**: +10 for goal, -1 per step
-- **Cost**: +1 for hazard tiles
+## Repository Structure
+```plantext
+├── src/
+│   ├── gtfs_pipeline/     # Ingestion & preprocessing
+│   ├── sim_bridge/        # GTFS → SUMO network conversion
+│   ├── training/          # RL agents and baselines
+│   └── evaluation/        # Metrics and visualization
+├── configs/               # YAML configs for feeds, scenarios
+├── data/                  # GTFS raw & warehouse (Parquet)
+├── results/               # Figures, logs, trained models
+├── Dockerfile             # Reproducible environment
+├── docker-compose.yaml    # Optional local orchestration
+└── README.md
 
-## 🧠 Key Features
+```
 
-- ✅ **Invalid Action Masking (IAM)** - Prevents invalid moves
-- ✅ **Prioritized Experience Replay (PER)** - Efficient learning
-- ✅ **Dueling Architecture** - Separate value and advantage streams
-- ✅ **Double DQN** - Stable target network updates
-- ✅ **Lagrangian Constraint** - Balances reward vs. cost optimization
-- ✅ **EMA Cost Estimation** - Adaptive constraint handling
 
-## 🚀 Quick Start
-
+---
+## Quickstart
 ```bash
-# Install dependencies
-pip install torch matplotlib numpy
+# Clone repo
+git clone https://github.com/yourname/tram-delay-reduction.git
+cd tram-delay-reduction
 
-# Run training
-python cdddqn_min.py
-```
+# Build Docker image
+docker build -t tram-delay-reduction .
 
-## 📊 Results
-
-The algorithm learns to:
-- Navigate from start (0,0) to goal (4,4)
-- Avoid hazard tiles while minimizing path length
-- Balance exploration vs. exploitation
-
-## 🎮 Environment Layout
+# Run GTFS ingestion (example config)
+docker run -v ./data:/app/data tram-delay-reduction \
+  python -m src.gtfs_pipeline.poll_realtime --config configs/feed.yaml --minutes 60
 
 ```
-┌─────┬─────┬─────┬─────┬─────┐
-│  S  │     │     │  H  │     │
-├─────┼─────┼─────┼─────┼─────┤
-│     │  W  │  W  │     │     │
-├─────┼─────┼─────┼─────┼─────┤
-│     │  W  │  H  │     │     │
-├─────┼─────┼─────┼─────┼─────┤
-│     │     │     │     │     │
-├─────┼─────┼─────┼─────┼─────┤
-│     │     │     │     │  G  │
-└─────┴─────┴─────┴─────┴─────┘
 
-S = Start, G = Goal, W = Wall, H = Hazard
-```
-
-## 📈 Training Output
-
-- Episode Reward Plot
-- Episode Cost Plot  
-- Lambda & Cost Estimation Plot
-
-## 🔧 Parameters
-
-- **Training Steps**: 4,000
-- **Batch Size**: 32
-- **Learning Rate**: 1e-3
-- **Gamma**: 0.99
-- **Epsilon**: 0.9 → 0.05
-- **Lambda LR**: 3e-3
-- **Cost Budget**: 0.10
-
-## 📚 References
-
-- [Double DQN](https://arxiv.org/abs/1509.06461)
-- [Dueling DQN](https://arxiv.org/abs/1511.06581)
-- [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952)
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
