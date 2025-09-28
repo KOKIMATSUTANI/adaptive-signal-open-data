@@ -1,0 +1,23 @@
+# docker/Dockerfile.ingest
+ARG BASE_IMAGE=tram-base:latest
+FROM ${BASE_IMAGE}
+
+WORKDIR /app
+
+# Copy only necessary code and configuration
+# (Exclude data/, results/ etc. with .dockerignore)
+COPY src/ ./src/
+COPY configs/ ./configs/
+
+# Volume (recommend mounting host data)
+VOLUME ["/app/data"]
+
+# Default execution.
+# 1) If CLI exists (e.g., src/gtfs_pipeline/cli.py)
+# ENTRYPOINT separated for easy modification
+ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli"]
+CMD ["all", "--feed", "tokyo"]
+
+# 2) If only minimal script (fetch_gtfs_rt.py) exists, switch to below
+# ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.fetch_gtfs_rt"]
+# CMD []
