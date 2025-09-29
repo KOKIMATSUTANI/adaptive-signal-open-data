@@ -1,23 +1,28 @@
 # docker/Dockerfile.ingest
+# GTFS/GTFS-RT 取得 + Parquet化専用
+# 実行権限・依存を最小限に（セキュア&軽量）。ジョブは短命・定期実行しやすい
 ARG BASE_IMAGE=tram-base:latest
 FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-# Copy only necessary code and configuration
-# (Exclude data/, results/ etc. with .dockerignore)
-COPY src/ ./src/
+# Ingest専用の軽量依存関係のみ追加
+COPY requirements-ingest.txt /tmp/requirements-ingest.txt
+RUN pip install -r /tmp/requirements-ingest.txt \
+    && rm /tmp/requirements-ingest.txt
+
+# Copy only necessary code for ingestion
+COPY src/gtfs_pipeline/ ./src/gtfs_pipeline/
 COPY configs/ ./configs/
 
-# Volume (recommend mounting host data)
+# データ用ボリューム（外部マウント前提）
 VOLUME ["/app/data"]
 
-# Default execution.
-# 1) If CLI exists (e.g., src/gtfs_pipeline/cli.py)
-# ENTRYPOINT separated for easy modification
-ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli"]
-CMD ["all", "--feed", "tokyo"]
+# 短命ジョブ用の設定
+# 一回実行して終了（cron等で定期実行）
+ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
+CMD ["--feed-type", "all", "--once"]
 
-# 2) If only minimal script (fetch_gtfs_rt.py) exists, switch to below
-# ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.fetch_gtfs_rt"]
-# CMD []
+# 実行例:
+# docker run --rm -v /host/data:/app/data tram-ingest:latest
+# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type gtfs_static --once

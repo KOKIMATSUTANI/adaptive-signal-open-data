@@ -1,0 +1,58 @@
+# docker/Dockerfile.sim
+# SUMO / Flow のシミュレーション専用
+# SIM系の追加依存（SUMO, Flow, OSパッケージ）を隔離。重い/特殊な依存を他ジョブに波及させない
+ARG BASE_IMAGE=tram-base:latest
+FROM ${BASE_IMAGE}
+
+# Switch to root for system package installation
+USER root
+
+# SUMO/Flow用のOS依存関係（重い・特殊な依存を隔離）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      # SUMO dependencies
+      libxerces-c-dev \
+      libproj-dev \
+      libfox-1.6-dev \
+      libgdal-dev \
+      libgl2ps-dev \
+      libglu1-mesa-dev \
+      # Flow dependencies
+      libgl1-mesa-glx \
+      libglib2.0-0 \
+      # その他SIM用
+      build-essential \
+      cmake \
+      pkg-config \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# SUMO installation
+ENV SUMO_HOME=/opt/sumo
+RUN wget -q https://github.com/eclipse/sumo/releases/download/v1.18.0/sumo-all-1.18.0.tar.gz \
+    && tar -xzf sumo-all-1.18.0.tar.gz \
+    && mv sumo-1.18.0 /opt/sumo \
+    && rm sumo-all-1.18.0.tar.gz
+ENV PATH="${SUMO_HOME}/bin:${PATH}"
+
+# Switch back to appuser
+USER appuser
+
+# SIM専用のPython依存関係
+COPY requirements-sim.txt /tmp/requirements-sim.txt
+RUN pip install -r /tmp/requirements-sim.txt \
+    && rm /tmp/requirements-sim.txt
+
+# Copy simulation code
+COPY src/simulation/ ./src/simulation/
+COPY configs/sim/ ./configs/sim/
+
+# シミュレーション結果用ボリューム
+VOLUME ["/app/results"]
+
+# シミュレーション実行
+ENTRYPOINT ["python", "-m", "src.simulation.runner"]
+CMD ["--config", "configs/sim/default.yaml"]
+
+# 実行例:
+# docker run --rm -v /host/results:/app/results tram-sim:latest
+# docker run --rm -v /host/results:/app/results tram-sim:latest --scenario toyama_tram

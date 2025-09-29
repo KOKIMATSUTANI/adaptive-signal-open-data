@@ -1,0 +1,31 @@
+# docker/Dockerfile.train
+# RL / MIP 学習専用
+# 将来の GPU化（CUDAベースに差し替え）をこの層だけで完結。学習用ライブラリ（torch など）を他から分離
+ARG BASE_IMAGE=tram-base:latest
+FROM ${BASE_IMAGE}
+
+# 学習専用のPython依存関係（重い・GPU対応可能）
+COPY requirements-train.txt /tmp/requirements-train.txt
+RUN pip install -r /tmp/requirements-train.txt \
+    && rm /tmp/requirements-train.txt
+
+# Copy training code
+COPY src/training/ ./src/training/
+COPY configs/train/ ./configs/train/
+
+# 学習結果・モデル用ボリューム
+VOLUME ["/app/models", "/app/results"]
+
+# 学習実行
+ENTRYPOINT ["python", "-m", "src.training.trainer"]
+CMD ["--config", "configs/train/default.yaml"]
+
+# 実行例:
+# docker run --rm -v /host/models:/app/models -v /host/results:/app/results tram-train:latest
+# docker run --rm -v /host/models:/app/models tram-train:latest --algorithm qddqn --episodes 1000
+
+# GPU対応版（将来の拡張）:
+# FROM nvidia/cuda:11.8-devel-ubuntu20.04 as cuda-base
+# ARG BASE_IMAGE=tram-base:latest
+# FROM ${BASE_IMAGE}
+# # CUDA対応のPyTorch等をインストール
