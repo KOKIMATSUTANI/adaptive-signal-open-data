@@ -5,7 +5,7 @@ Database management module for GTFS-RT pipeline.
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -69,7 +69,7 @@ class DatabaseManager:
             raw_dir = Path("/app/data/raw")
             raw_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate filename with timestamp
+            # Generate filename with timestamp (JST - container timezone is set to Asia/Tokyo)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             feed_type = data.get('feed_type', 'unknown')
             filename = f"gtfs_rt_{feed_type}_{timestamp}.json"
@@ -144,7 +144,7 @@ class DatabaseManager:
             raw_dir = Path("/app/data/raw")
             raw_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate filename with timestamp
+            # Generate filename with timestamp (JST - container timezone is set to Asia/Tokyo)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"gtfs_static_{timestamp}.json"
             filepath = raw_dir / filename

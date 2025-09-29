@@ -10,7 +10,7 @@ This project uses **separated Docker images** to optimize dependencies for each 
 | --------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | **Dockerfile.base**   | Common foundation (Python, pip/poetry, pandas/pyarrow and other dependencies shared across all jobs) | Install heavy dependencies **once** and cache them → subsequent derived images build **efficiently**. **Centralize** environment for improved reproducibility.                    |
 | **Dockerfile.ingest** | GTFS/GTFS-RT collection + Parquet conversion dedicated                          | Minimize execution permissions and dependencies (secure & lightweight). Jobs are short-lived and easy to run periodically. Designed with data **volumes** in mind.                    |
-| **Dockerfile.sim**    | SUMO / Flow simulation dedicated                               | **Isolate** SIM-related additional dependencies (SUMO, Flow, OS packages). Prevent heavy/specialized dependencies from affecting other jobs.                        |
+| **Dockerfile.sim**    | SUMO / FLOW simulation dedicated                               | **Isolate** SIM-related additional dependencies (SUMO, FLOW, OS packages). Prevent heavy/specialized dependencies from affecting other jobs.                        |
 | **Dockerfile.train**  | RL / MIP training dedicated                                         | Future **GPU support (CUDA-based replacement)** can be completed in this layer only. **Separate** training libraries (torch, etc.) from others to optimize size and security. |
 
 ## Quick Start
@@ -94,7 +94,7 @@ make build-train
 - **Restart**: Auto restart (unless-stopped)
 
 ### simulation
-- **Purpose**: SUMO/Flow simulation execution
+- **Purpose**: SUMO/FLOW simulation execution
 - **Execution**: Manual execution
 - **Restart**: None
 

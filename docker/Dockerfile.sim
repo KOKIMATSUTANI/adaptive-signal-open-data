@@ -1,13 +1,13 @@
 # docker/Dockerfile.sim
-# SUMO/Flow simulation only
-# Isolate SIM-specific additional dependencies (SUMO, Flow, OS packages). Prevent heavy/specialized dependencies from affecting other jobs
+# SUMO/FLOW simulation only
+# Isolate SIM-specific additional dependencies (SUMO, FLOW, OS packages). Prevent heavy/specialized dependencies from affecting other jobs
 ARG BASE_IMAGE=tram-base:latest
 FROM ${BASE_IMAGE}
 
 # Switch to root for system package installation
 USER root
 
-# OS dependencies for SUMO/Flow (isolate heavy and specialized dependencies)
+# OS dependencies for SUMO/FLOW (isolate heavy and specialized dependencies)
 RUN apt-get update && apt-get install -y --no-install-recommends \
       # SUMO dependencies
       libxerces-c-dev \
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libgdal-dev \
       libgl2ps-dev \
       libglu1-mesa-dev \
-      # Flow dependencies
+      # FLOW dependencies
       libgl1-mesa-glx \
       libglib2.0-0 \
       # Other SIM dependencies

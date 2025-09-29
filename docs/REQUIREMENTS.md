@@ -27,7 +27,7 @@ requirements/
    - structlog (logging)
 
 3. **sim.txt** - Dependencies for simulation only
-   - SUMO/Flow related libraries
+   - SUMO/FLOW related libraries
    - Visualization libraries
 
 4. **train.txt** - Dependencies for training only

@@ -1,10 +1,10 @@
-# Dependencies for SUMO/Flow simulation only
+# Dependencies for SUMO/FLOW simulation only
 # Isolate heavy and specialized dependencies from other jobs
 
 # SUMO Python bindings
 traci>=1.18.0
 
-# Flow (RL for traffic simulation)
+# FLOW (RL for traffic simulation)
 flow>=0.5.0
 
 # Simulation libraries

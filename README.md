@@ -6,7 +6,7 @@ A GTFS data collection, analysis, and optimization system designed to reduce tra
 
 - **GTFS Data Collection**: Real-time data acquisition at 20-second intervals
 - **Auto Backup**: Automatic upload to Google Drive
-- **Simulation**: Traffic simulation using SUMO/Flow
+- **Simulation**: Traffic simulation using SUMO/FLOW
 - **Optimization**: Delay reduction through reinforcement learning and mathematical optimization
 
 ## Quick Start
@@ -79,7 +79,7 @@ tram-delay-reduction-management/
 - **Storage**: Local + Google Drive auto backup
 
 ### Simulation
-- **Engine**: SUMO/Flow
+- **Engine**: SUMO/FLOW
 - **Purpose**: Traffic flow simulation
 - **Output**: Delay analysis results
 

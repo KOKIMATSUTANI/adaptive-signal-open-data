@@ -8,7 +8,7 @@ import os
 import logging
 from pathlib import Path
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -217,7 +217,7 @@ class GoogleDriveManager:
                 if not self.authenticate():
                     return False
             
-            # Create date folder
+            # Create date folder (JST - container timezone is set to Asia/Tokyo)
             today = datetime.now().strftime("%Y-%m-%d")
             date_folder_id = self.find_folder(today)
             if not date_folder_id:

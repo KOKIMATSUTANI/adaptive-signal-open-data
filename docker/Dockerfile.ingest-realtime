@@ -1,6 +1,6 @@
-# docker/Dockerfile.ingest
-# GTFS Static data ingestion only (short-lived task)
-# Single execution per container instance - designed for scheduled runs
+# docker/Dockerfile.ingest-realtime
+# GTFS-RT real-time data ingestion (short-lived task)
+# Single execution per container instance - designed for high-frequency scheduling
 ARG BASE_IMAGE=tram-base:latest
 ARG APP_UID=1000
 ARG APP_GID=1000
@@ -29,12 +29,12 @@ VOLUME ["/app/data"]
 USER appuser
 
 # Short-lived task execution
-# Single execution per container instance (Static data only)
+# Single execution per container instance (RT data only)
 ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
-CMD ["--feed-type", "gtfs_static", "--once"]
+CMD ["--feed-type", "all", "--once"]
 
 # Usage examples:
 # Single execution (short-lived task):
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type static --once
-# Single execution for specific feed only:
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type static --once
+# docker run --rm -v /host/data:/app/data tram-ingest-realtime:latest --feed-type rt --once
+# Single execution for specific RT feed:
+# docker run --rm -v /host/data:/app/data tram-ingest-realtime:latest --feed-type trip_updates --once

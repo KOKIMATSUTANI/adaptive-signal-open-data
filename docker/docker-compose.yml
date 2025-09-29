@@ -1,24 +1,81 @@
 version: '3.8'
 
+# NOTE: Do not use chmod 777 or 666.
+# Use proper ownership (chown) and safe permissions instead (chmod 755).
+
+# Common environment variables
+x-common-environment: &common-environment
+  PYTHONPATH: /app/src
+  RCLONE_ENABLED: "true"
+  GOOGLE_DRIVE_ENABLED: "true"
+
+# Common volumes
+x-common-volumes: &common-volumes
+  - ../data:/app/data
+  - ../logs:/app/logs
+  - ../configs:/app/configs
+
+# Rclone config volume
+x-rclone-volume: &rclone-volume
+  - ~/.config/rclone:/home/appuser/.config/rclone:ro
+
 services:
-  # Data ingestion job (short-lived, periodic execution)
-  gtfs-ingest:
+  # GTFS Static data ingestion (short-lived task)
+  gtfs-ingest-static:
     build:
       context: ..
       dockerfile: docker/Dockerfile.ingest
       args:
         BASE_IMAGE: tram-base:latest
+        APP_UID: 1000
+        APP_GID: 1000
+    volumes: *common-volumes
+    environment: *common-environment
+    # Single execution per container instance (Static data only)
+    command: ["--feed-type", "gtfs_static", "--once"]
+    restart: "no"  # Short-lived task
+    profiles:
+      - manual  # Run manually or via scheduler
+
+  # GTFS-RT real-time data ingestion (short-lived task)
+  gtfs-ingest-realtime:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ingest-realtime
+      args:
+        BASE_IMAGE: tram-base:latest
+        APP_UID: 1000
+        APP_GID: 1000
+    volumes: *common-volumes
+    environment: *common-environment
+    # Single execution per container instance (RT data only)
+    command: ["--feed-type", "all", "--once"]
+    restart: "no"  # Short-lived task
+    profiles:
+      - manual  # Run manually or via scheduler
+
+  # Backup job (short-lived task)
+  backup:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backup
+      args:
+        BASE_IMAGE: tram-base:latest
+        APP_UID: 1000
+        APP_GID: 1000
     volumes:
       - ../data:/app/data
       - ../logs:/app/logs
-      - ../configs/google_drive:/app/configs/google_drive
+      - ../configs:/app/configs
+      - ~/.config/rclone:/home/appuser/.config/rclone:ro
     environment:
-      - PYTHONPATH=/app/src
-      - GOOGLE_DRIVE_ENABLED=true
-      - BACKUP_INTERVAL=300  # Backup every 5 minutes
-    # Continuous execution (data collection every 20 seconds) + Google Drive auto backup
-    # command: ["--feed-type", "all", "--interval", "20"]  # Use default command
-    restart: unless-stopped
+      <<: *common-environment
+      BACKUP_INTERVAL: "60"  # Backup every 1 minute for real-time data
+    # Single execution per container instance
+    command: ["--once"]
+    restart: "no"  # Short-lived task
+    profiles:
+      - manual  # Run manually or via scheduler
 
   # Simulation execution
   simulation:
