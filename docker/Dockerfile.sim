@@ -38,7 +38,7 @@ ENV PATH="${SUMO_HOME}/bin:${PATH}"
 USER appuser
 
 # SIM専用のPython依存関係
-COPY requirements-sim.txt /tmp/requirements-sim.txt
+COPY requirements/sim.txt /tmp/requirements-sim.txt
 RUN pip install -r /tmp/requirements-sim.txt \
     && rm /tmp/requirements-sim.txt
 

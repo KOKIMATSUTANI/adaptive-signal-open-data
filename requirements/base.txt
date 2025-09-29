@@ -16,7 +16,7 @@ click>=8.0.0
 
 # プロトコルバッファ
 protobuf>=4.0.0
-google-transit-gtfs-realtime-bindings>=1.0.0
+gtfs-realtime-bindings>=1.0.0
 
 # ログ・設定
 python-dotenv>=1.0.0

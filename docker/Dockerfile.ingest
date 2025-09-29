@@ -6,27 +6,37 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-# Ingest専用の軽量依存関係のみ追加
-COPY requirements-ingest.txt /tmp/requirements-ingest.txt
+# Ingest専用の軽量依存関係のみ追加（rootユーザーでインストール）
+COPY requirements/ingest.txt /tmp/requirements-ingest.txt
 RUN pip install -r /tmp/requirements-ingest.txt \
     && rm /tmp/requirements-ingest.txt
 
 # Copy only necessary code for ingestion
 COPY src/gtfs_pipeline/ ./src/gtfs_pipeline/
 COPY configs/ ./configs/
+COPY scripts/ ./scripts/
+
+# 権限を修正
+RUN chown -R appuser:appuser /app \
+    && chmod +x /app/scripts/backup_to_google_drive.sh
 
 # データ用ボリューム（外部マウント前提）
 VOLUME ["/app/data"]
 
+# ユーザーを切り替え
+USER appuser
+
 # 繰り返しデータ取得用の設定
-# 連続実行（20秒間隔でデータ取得）
-ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
-CMD ["--feed-type", "all", "--interval", "20"]
+# 連続実行（20秒間隔でデータ取得）+ Google Drive自動バックアップ
+ENTRYPOINT ["sh", "-c"]
+CMD ["/app/scripts/backup_to_google_drive.sh & python -m src.gtfs_pipeline.cli ingest --feed-type all --interval 20"]
 
 # 実行例:
-# 連続実行（20秒間隔）:
-# docker run --rm -v /host/data:/app/data tram-ingest:latest
-# 一回だけ実行:
+# 連続実行（20秒間隔）+ Google Drive自動バックアップ:
+# docker run --rm -v /host/data:/app/data -v /host/configs/google_drive:/app/configs/google_drive -e GOOGLE_DRIVE_ENABLED=true tram-ingest:latest
+# 一回だけ実行（バックアップなし）:
 # docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type all --once
 # 特定のフィードのみ連続実行:
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type trip_updates --interval 30
+# docker run --rm -v /host/data:/app/data -v /host/configs/google_drive:/app/configs/google_drive -e GOOGLE_DRIVE_ENABLED=true tram-ingest:latest --feed-type trip_updates --interval 30
+# バックアップ間隔を変更:
+# docker run --rm -v /host/data:/app/data -v /host/configs/google_drive:/app/configs/google_drive -e GOOGLE_DRIVE_ENABLED=true -e BACKUP_INTERVAL=600 tram-ingest:latest

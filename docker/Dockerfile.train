@@ -5,7 +5,7 @@ ARG BASE_IMAGE=tram-base:latest
 FROM ${BASE_IMAGE}
 
 # 学習専用のPython依存関係（重い・GPU対応可能）
-COPY requirements-train.txt /tmp/requirements-train.txt
+COPY requirements/train.txt /tmp/requirements-train.txt
 RUN pip install -r /tmp/requirements-train.txt \
     && rm /tmp/requirements-train.txt
 

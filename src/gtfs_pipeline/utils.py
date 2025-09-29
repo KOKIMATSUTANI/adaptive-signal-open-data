@@ -9,6 +9,7 @@ from typing import Optional
 
 
 def setup_logging(
+    name: str = "root",
     level: str = "INFO",
     log_file: Optional[str] = None,
     log_format: Optional[str] = None
@@ -25,8 +26,8 @@ def setup_logging(
     # Create formatter
     formatter = logging.Formatter(log_format)
     
-    # Get root logger
-    logger = logging.getLogger()
+    # Get logger with specified name
+    logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper()))
     
     # Clear existing handlers

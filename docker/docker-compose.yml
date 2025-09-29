@@ -4,32 +4,33 @@ services:
   # データ取得ジョブ（短命・定期実行）
   gtfs-ingest:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.ingest
       args:
         BASE_IMAGE: tram-base:latest
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./configs/google_drive:/app/configs/google_drive
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../configs/google_drive:/app/configs/google_drive
     environment:
       - PYTHONPATH=/app/src
       - GOOGLE_DRIVE_ENABLED=true
-    # 連続実行（20秒間隔でデータ取得）
-    command: ["--feed-type", "all", "--interval", "20"]
+      - BACKUP_INTERVAL=300  # 5分間隔でバックアップ
+    # 連続実行（20秒間隔でデータ取得）+ Google Drive自動バックアップ
+    # command: ["--feed-type", "all", "--interval", "20"]  # デフォルトコマンドを使用
     restart: unless-stopped
 
   # シミュレーション実行
   simulation:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.sim
       args:
         BASE_IMAGE: tram-base:latest
     volumes:
-      - ./data:/app/data
-      - ./results:/app/results
-      - ./logs:/app/logs
+      - ../data:/app/data
+      - ../results:/app/results
+      - ../logs:/app/logs
     environment:
       - PYTHONPATH=/app/src
       - SUMO_HOME=/opt/sumo
@@ -39,15 +40,15 @@ services:
   # 学習実行
   training:
     build:
-      context: .
+      context: ..
       dockerfile: docker/Dockerfile.train
       args:
         BASE_IMAGE: tram-base:latest
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-      - ./results:/app/results
-      - ./logs:/app/logs
+      - ../data:/app/data
+      - ../models:/app/models
+      - ../results:/app/results
+      - ../logs:/app/logs
     environment:
       - PYTHONPATH=/app/src
     command: ["--config", "configs/train/qddqn.yaml", "--episodes", "1000"]

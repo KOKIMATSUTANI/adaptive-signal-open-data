@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install common Python dependencies (全ジョブ共通)
 # 重い依存をここで一度だけインストールしてキャッシュ化
-COPY requirements-base.txt /tmp/requirements-base.txt
+COPY requirements/base.txt /tmp/requirements-base.txt
 RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install -r /tmp/requirements-base.txt \
     && rm /tmp/requirements-base.txt
@@ -37,7 +37,6 @@ RUN mkdir -p /app/src /app/configs /app/data /app/results /app/logs
 # Create non-root user (security enhancement)
 RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && chown -R appuser:appuser /app
-USER appuser
 
 # Health check port (共通)
 EXPOSE 8000
