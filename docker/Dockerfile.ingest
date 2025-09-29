@@ -18,11 +18,15 @@ COPY configs/ ./configs/
 # データ用ボリューム（外部マウント前提）
 VOLUME ["/app/data"]
 
-# 短命ジョブ用の設定
-# 一回実行して終了（cron等で定期実行）
+# 繰り返しデータ取得用の設定
+# 連続実行（20秒間隔でデータ取得）
 ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
-CMD ["--feed-type", "all", "--once"]
+CMD ["--feed-type", "all", "--interval", "20"]
 
 # 実行例:
+# 連続実行（20秒間隔）:
 # docker run --rm -v /host/data:/app/data tram-ingest:latest
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type gtfs_static --once
+# 一回だけ実行:
+# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type all --once
+# 特定のフィードのみ連続実行:
+# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type trip_updates --interval 30

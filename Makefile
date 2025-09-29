@@ -28,9 +28,13 @@ build-train: build-base
 # 全イメージをビルド
 build-all: build-ingest build-sim build-train
 
-# データ取得実行
+# データ取得実行（連続実行）
 run-ingest: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs $(INGEST_IMAGE)
+
+# データ取得実行（一回だけ）
+run-ingest-once: build-ingest
+	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs $(INGEST_IMAGE) --feed-type all --once
 
 # シミュレーション実行
 run-sim: build-sim

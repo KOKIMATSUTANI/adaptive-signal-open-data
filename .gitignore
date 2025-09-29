@@ -33,6 +33,10 @@ data/**/*.pb
 results/**/*.pb
 logs/**/*.pb
 
+# --- Google Drive認証情報 ---
+configs/google_drive/credentials.json
+configs/google_drive/token.json
+
 # --- SUMO / Flow auto-generated files ---
 # (simulation network conversion outputs, etc.)
 *.net.xml

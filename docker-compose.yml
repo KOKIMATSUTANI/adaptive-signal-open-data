@@ -11,11 +11,13 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./configs/google_drive:/app/configs/google_drive
     environment:
       - PYTHONPATH=/app/src
-    # 一回実行して終了（cron等で定期実行）
-    command: ["--feed-type", "all", "--once"]
-    restart: "no"
+      - GOOGLE_DRIVE_ENABLED=true
+    # 連続実行（20秒間隔でデータ取得）
+    command: ["--feed-type", "all", "--interval", "20"]
+    restart: unless-stopped
 
   # シミュレーション実行
   simulation:
