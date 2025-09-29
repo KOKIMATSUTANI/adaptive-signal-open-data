@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # データ取得ジョブ（短命・定期実行）
+  gtfs-ingest:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ingest
+      args:
+        BASE_IMAGE: tram-base:latest
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+    # 一回実行して終了（cron等で定期実行）
+    command: ["--feed-type", "all", "--once"]
+    restart: "no"
+
+  # シミュレーション実行
+  simulation:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.sim
+      args:
+        BASE_IMAGE: tram-base:latest
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+      - SUMO_HOME=/opt/sumo
+    command: ["--config", "configs/sim/toyama_tram.yaml"]
+    restart: "no"
+
+  # 学習実行
+  training:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+      args:
+        BASE_IMAGE: tram-base:latest
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app/src
+    command: ["--config", "configs/train/qddqn.yaml", "--episodes", "1000"]
+    restart: "no"
+    # GPU対応時は以下をコメントアウト
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+# ボリューム定義
+volumes:
+  data:
+  models:
+  results:
+  logs:

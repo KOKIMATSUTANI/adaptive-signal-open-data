@@ -1,0 +1,22 @@
+# 全ジョブ共通の依存関係（重い依存をここで一度だけインストール）
+# データ処理・分析の基盤
+pandas>=1.5.0
+numpy>=1.21.0
+pyarrow>=10.0.0
+
+# 非同期処理・HTTP通信
+aiohttp>=3.8.0
+
+# データベース接続
+asyncpg>=0.28.0
+sqlalchemy>=2.0.0
+
+# CLI・設定管理
+click>=8.0.0
+
+# プロトコルバッファ
+protobuf>=4.0.0
+google-transit-gtfs-realtime-bindings>=1.0.0
+
+# ログ・設定
+python-dotenv>=1.0.0
