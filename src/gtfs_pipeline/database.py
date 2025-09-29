@@ -33,7 +33,7 @@ class DatabaseManager:
         self.logger = logging.getLogger(__name__)
         self.google_drive_manager = None
         
-        # Google Drive連携を初期化
+        # Initialize Google Drive integration
         if gtfs_config:
             self.google_drive_manager = GoogleDriveManager(gtfs_config)
     
@@ -60,24 +60,48 @@ class DatabaseManager:
         elif 'vehicle_positions' in data:
             self.logger.info(f"Vehicle positions: {len(data['vehicle_positions'])} records")
         
-        # Google Driveにアップロード
+        # Save to raw data directory
+        try:
+            import json
+            from pathlib import Path
+            
+            # Create raw data directory if it doesn't exist
+            raw_dir = Path("/app/data/raw")
+            raw_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            feed_type = data.get('feed_type', 'unknown')
+            filename = f"gtfs_rt_{feed_type}_{timestamp}.json"
+            filepath = raw_dir / filename
+            
+            # Save data to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, default=str, ensure_ascii=False)
+            
+            self.logger.info(f"GTFS-RT data saved to: {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Error saving GTFS-RT data to file: {e}")
+            return False
+        
+        # Upload to Google Drive
         if self.google_drive_manager:
             try:
-                # データを一時ファイルに保存
-                import json
+                # Save data to temporary file
                 import tempfile
                 
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                     json.dump(data, f, indent=2, default=str)
                     temp_file = f.name
                 
-                # Google Driveにアップロード
+                # Upload to Google Drive
                 success = self.google_drive_manager.upload_file(
                     temp_file, 
                     file_name=f"gtfs_rt_{data.get('feed_type', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                 )
                 
-                # 一時ファイルを削除
+                # Remove temporary file
                 os.unlink(temp_file)
                 
                 if success:
@@ -88,8 +112,6 @@ class DatabaseManager:
             except Exception as e:
                 self.logger.error(f"Error uploading to Google Drive: {e}")
         
-        # TODO: Implement actual database storage
-        # For now, just log the data
         return True
     
     async def store_gtfs_static_data(self, data: Dict[str, pd.DataFrame], feed_url: str) -> bool:
@@ -113,8 +135,40 @@ class DatabaseManager:
                 # Log first few rows for debugging
                 self.logger.debug(f"  Sample data:\n{df.head()}")
         
-        # TODO: Implement actual database storage
-        # For now, just log the data
+        # Save to raw data directory
+        try:
+            import json
+            from pathlib import Path
+            
+            # Create raw data directory if it doesn't exist
+            raw_dir = Path("/app/data/raw")
+            raw_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"gtfs_static_{timestamp}.json"
+            filepath = raw_dir / filename
+            
+            # Convert DataFrames to dictionaries for JSON serialization
+            json_data = {
+                'feed_url': feed_url,
+                'timestamp': timestamp,
+                'tables': {}
+            }
+            
+            for table_name, df in data.items():
+                json_data['tables'][table_name] = df.to_dict('records')
+            
+            # Save data to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(json_data, f, indent=2, default=str, ensure_ascii=False)
+            
+            self.logger.info(f"GTFS Static data saved to: {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Error saving GTFS Static data to file: {e}")
+            return False
+        
         return True
     
     async def close(self):

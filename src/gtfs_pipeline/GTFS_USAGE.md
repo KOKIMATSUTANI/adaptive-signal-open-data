@@ -1,89 +1,89 @@
-# 富山地方鉄道 GTFS データ取得ガイド
+# Toyama Chitetsu GTFS Data Collection Guide
 
-このプロジェクトは、富山地方鉄道のGTFSデータ（静的データとリアルタイムデータ）を取得・処理するためのPythonパイプラインです。
+This project is a Python pipeline for collecting and processing GTFS data (static and real-time data) from Toyama Chitetsu.
 
-## データソース
+## Data Sources
 
 - **GTFS Static (JP)**: https://api.gtfs-data.jp/v2/organizations/chitetsu/feeds/chitetsushinaidensha/files/feed.zip?rid=current
 - **Trip Updates**: https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/TripUpdates.pb
 - **Vehicle Positions**: https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/VehiclePositions.pb
 
-## 使用方法
+## Usage
 
-### 1. 依存関係のインストール
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 設定されたフィードの確認
+### 2. Check Configured Feeds
 
 ```bash
 python -m src.gtfs_pipeline.cli list-feeds
 ```
 
-### 3. データの取得
+### 3. Data Collection
 
-#### 一回だけ実行（推奨）
+#### Run Once (Recommended)
 ```bash
 python -m src.gtfs_pipeline.cli ingest --feed-type all --once
 ```
 
-#### 連続実行（20秒間隔）
+#### Continuous Execution (20-second intervals)
 ```bash
 python -m src.gtfs_pipeline.cli ingest --feed-type all --interval 20
 ```
 
-#### 連続実行（60秒間隔、デフォルト）
+#### Continuous Execution (60-second intervals, default)
 ```bash
 python -m src.gtfs_pipeline.cli ingest --feed-type all
 ```
 
-#### 特定のデータタイプのみ取得
+#### Collect Specific Data Types Only
 ```bash
-# GTFS Staticデータのみ
+# GTFS Static data only
 python -m src.gtfs_pipeline.cli ingest --feed-type gtfs_static --once
 
-# Trip Updatesのみ
+# Trip Updates only
 python -m src.gtfs_pipeline.cli ingest --feed-type trip_updates --once
 
-# Vehicle Positionsのみ
+# Vehicle Positions only
 python -m src.gtfs_pipeline.cli ingest --feed-type vehicle_positions --once
 ```
 
-## 設定
+## Configuration
 
-### リクエスト間隔
-- 現在の設定: **20秒間隔**でリクエストを送信
-- 連続実行時の間隔: `--interval`オプションで指定可能（デフォルト60秒）
+### Request Interval
+- Current setting: Send requests at **20-second intervals**
+- Continuous execution interval: Can be specified with `--interval` option (default 60 seconds)
 
-### タイムアウト設定
-- リクエストタイムアウト: 30秒
-- 最大リトライ回数: 3回
-- リトライ間隔: 5秒
+### Timeout Settings
+- Request timeout: 30 seconds
+- Maximum retry count: 3 times
+- Retry interval: 5 seconds
 
-## データ構造
+## Data Structure
 
-### GTFS Static データ
-- `agency.txt`: 事業者情報
-- `stops.txt`: 停留所情報
-- `routes.txt`: 路線情報
-- `trips.txt`: 運行情報
-- `stop_times.txt`: 停留所通過時刻
-- `calendar.txt`: 運行カレンダー
-- `calendar_dates.txt`: 運行日例外
+### GTFS Static Data
+- `agency.txt`: Agency information
+- `stops.txt`: Stop information
+- `routes.txt`: Route information
+- `trips.txt`: Trip information
+- `stop_times.txt`: Stop time information
+- `calendar.txt`: Service calendar
+- `calendar_dates.txt`: Service date exceptions
 
-### GTFS-RT データ
-- **Trip Updates**: 運行遅延・変更情報
-- **Vehicle Positions**: 車両位置情報
+### GTFS-RT Data
+- **Trip Updates**: Trip delay and change information
+- **Vehicle Positions**: Vehicle position information
 
-## ログ
+## Logging
 
-処理状況は詳細なログとして出力されます。データの取得状況、解析結果、エラー情報などが記録されます。
+Processing status is output as detailed logs. Data collection status, analysis results, error information, etc. are recorded.
 
-## 注意事項
+## Important Notes
 
-- 現在の実装では、データはログに出力されるのみで、データベースへの永続化は実装されていません
-- 実際のデータベース保存機能を実装する場合は、`database.py`の`store_gtfs_rt_data`と`store_gtfs_static_data`メソッドを実装してください
-- リクエスト間隔は20秒に設定されており、サーバーに負荷をかけないよう配慮されています
-- 連続実行時は`Ctrl+C`で停止できます
+- Current implementation only outputs data to logs, database persistence is not implemented
+- To implement actual database storage functionality, implement the `store_gtfs_rt_data` and `store_gtfs_static_data` methods in `database.py`
+- Request interval is set to 20 seconds to avoid putting load on the server
+- Continuous execution can be stopped with `Ctrl+C`

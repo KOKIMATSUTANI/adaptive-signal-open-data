@@ -1,5 +1,5 @@
-# SUMO / Flow シミュレーション専用の依存関係
-# 重い・特殊な依存を他ジョブから隔離
+# Dependencies for SUMO/Flow simulation only
+# Isolate heavy and specialized dependencies from other jobs
 
 # SUMO Python bindings
 traci>=1.18.0
@@ -7,19 +7,19 @@ traci>=1.18.0
 # Flow (RL for traffic simulation)
 flow>=0.5.0
 
-# シミュレーション用ライブラリ
+# Simulation libraries
 gym>=0.21.0
 gymnasium>=0.28.0
 
-# 可視化・分析
+# Visualization and analysis
 matplotlib>=3.5.0
 seaborn>=0.11.0
 plotly>=5.0.0
 
-# 数値計算・最適化
+# Numerical computation and optimization
 scipy>=1.9.0
 scikit-learn>=1.1.0
 
-# 設定・ログ
+# Configuration and logging
 pyyaml>=6.0
 tqdm>=4.64.0

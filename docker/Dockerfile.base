@@ -1,6 +1,6 @@
 # docker/Dockerfile.base
-# 共通の土台（Python, pip/poetry, pandas/pyarrow など全ジョブ共通の依存）
-# 一度だけ重い依存を入れてキャッシュ化 → 以降の派生イメージが爆速ビルド
+# Common base (Python, pip/poetry, pandas/pyarrow and other dependencies shared across all jobs)
+# Install heavy dependencies once and cache them → subsequent derived images build efficiently
 FROM python:3.12-slim
 
 # Python environment settings
@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# OS dependencies (minimal - 全ジョブ共通)
+# OS dependencies (minimal - common for all jobs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates \
       curl \
@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install common Python dependencies (全ジョブ共通)
-# 重い依存をここで一度だけインストールしてキャッシュ化
+# Install common Python dependencies (common for all jobs)
+# Install heavy dependencies once here and cache them
 COPY requirements/base.txt /tmp/requirements-base.txt
 RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install -r /tmp/requirements-base.txt \
@@ -38,5 +38,5 @@ RUN mkdir -p /app/src /app/configs /app/data /app/results /app/logs
 RUN groupadd -r appuser && useradd -r -g appuser appuser \
     && chown -R appuser:appuser /app
 
-# Health check port (共通)
+# Health check port (common)
 EXPOSE 8000

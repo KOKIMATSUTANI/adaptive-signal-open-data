@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # データ取得ジョブ（短命・定期実行）
+  # Data ingestion job (short-lived, periodic execution)
   gtfs-ingest:
     build:
       context: ..
@@ -15,12 +15,12 @@ services:
     environment:
       - PYTHONPATH=/app/src
       - GOOGLE_DRIVE_ENABLED=true
-      - BACKUP_INTERVAL=300  # 5分間隔でバックアップ
-    # 連続実行（20秒間隔でデータ取得）+ Google Drive自動バックアップ
-    # command: ["--feed-type", "all", "--interval", "20"]  # デフォルトコマンドを使用
+      - BACKUP_INTERVAL=300  # Backup every 5 minutes
+    # Continuous execution (data collection every 20 seconds) + Google Drive auto backup
+    # command: ["--feed-type", "all", "--interval", "20"]  # Use default command
     restart: unless-stopped
 
-  # シミュレーション実行
+  # Simulation execution
   simulation:
     build:
       context: ..
@@ -37,7 +37,7 @@ services:
     command: ["--config", "configs/sim/toyama_tram.yaml"]
     restart: "no"
 
-  # 学習実行
+  # Training execution
   training:
     build:
       context: ..
@@ -53,7 +53,7 @@ services:
       - PYTHONPATH=/app/src
     command: ["--config", "configs/train/qddqn.yaml", "--episodes", "1000"]
     restart: "no"
-    # GPU対応時は以下をコメントアウト
+    # Uncomment the following for GPU support
     # deploy:
     #   resources:
     #     reservations:
@@ -62,7 +62,7 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-# ボリューム定義
+# Volume definitions
 volumes:
   data:
   models:

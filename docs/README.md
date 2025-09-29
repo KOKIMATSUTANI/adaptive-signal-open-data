@@ -1,36 +1,39 @@
-# ドキュメント
+# Documentation
 
-このディレクトリには、プロジェクトの詳細なドキュメントが含まれています。
+This directory contains detailed documentation for the project.
 
-## ファイル一覧
+## File List
 
-| ファイル | 説明 |
-|----------|------|
-| `GOOGLE_DRIVE.md` | Google Drive連携の設定・使用方法 |
-| `README.md` | このファイル |
+| File | Description |
+|------|-------------|
+| `GOOGLE_DRIVE.md` | Google Drive integration setup and usage (rclone + API) |
+| `GOOGLE_DRIVE_API.md` | Google Drive API configuration (alternative to rclone) |
+| `RCLONE_SETUP.md` | rclone configuration and usage (recommended) |
+| `REQUIREMENTS.md` | Python dependencies management |
+| `README.md` | This file |
 
-## ドキュメントの追加
+## Adding Documentation
 
-新しいドキュメントを追加する場合は、このディレクトリに配置してください。
+When adding new documentation, place it in this directory.
 
-### 命名規則
-- ファイル名は大文字で始める
-- アンダースコアではなくハイフンを使用
-- 例: `DOCKER_SETUP.md`, `API_REFERENCE.md`
+### Naming Convention
+- Start file names with uppercase letters
+- Use hyphens instead of underscores
+- Example: `DOCKER_SETUP.md`, `API_REFERENCE.md`
 
-### 構造
+### Structure
 ```markdown
-# タイトル
+# Title
 
-## 概要
-簡潔な説明
+## Overview
+Brief description
 
-## セットアップ
-設定手順
+## Setup
+Configuration procedures
 
-## 使用方法
-実行方法
+## Usage
+Execution methods
 
-## トラブルシューティング
-よくある問題と解決方法
+## Troubleshooting
+Common issues and solutions
 ```

@@ -1,136 +1,169 @@
-# Docker Configuration
+# Docker Configuration - Tram Delay Reduction Management System
 
-このディレクトリには、Tram Delay Reduction ManagementシステムのDocker設定ファイルが含まれています。
+This directory contains Docker configuration files for the Tram Delay Reduction Management system.
 
-## ファイル構成
+## Architecture Overview
+
+This project uses **separated Docker images** to optimize dependencies for each job and reduce build time.
+
+| File                  | Role (What is this container for?)                                           | Goal / Benefits from this separation                                                                  |
+| --------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Dockerfile.base**   | Common foundation (Python, pip/poetry, pandas/pyarrow and other dependencies shared across all jobs) | Install heavy dependencies **once** and cache them → subsequent derived images build **efficiently**. **Centralize** environment for improved reproducibility.                    |
+| **Dockerfile.ingest** | GTFS/GTFS-RT collection + Parquet conversion dedicated                          | Minimize execution permissions and dependencies (secure & lightweight). Jobs are short-lived and easy to run periodically. Designed with data **volumes** in mind.                    |
+| **Dockerfile.sim**    | SUMO / Flow simulation dedicated                               | **Isolate** SIM-related additional dependencies (SUMO, Flow, OS packages). Prevent heavy/specialized dependencies from affecting other jobs.                        |
+| **Dockerfile.train**  | RL / MIP training dedicated                                         | Future **GPU support (CUDA-based replacement)** can be completed in this layer only. **Separate** training libraries (torch, etc.) from others to optimize size and security. |
+
+## Quick Start
+
+### 1. Build All Images
+```bash
+make build-all
+```
+
+### 2. Run Data Collection
+```bash
+make run-ingest
+```
+
+### 3. Run Simulation
+```bash
+make run-sim
+```
+
+### 4. Run Training
+```bash
+make run-train
+```
+
+## File Structure
 
 ```
 docker/
-├── docker-compose.yml    # 全サービスのオーケストレーション
-├── Dockerfile.base       # ベースイメージ（共通依存関係）
-├── Dockerfile.ingest     # GTFSデータ取得用イメージ
-├── Dockerfile.sim        # シミュレーション用イメージ
-├── Dockerfile.train      # 学習用イメージ
-└── README.md            # このファイル
+├── docker-compose.yml    # Orchestration for all services
+├── Dockerfile.base       # Base image (common dependencies)
+├── Dockerfile.ingest     # Image for GTFS data collection
+├── Dockerfile.sim        # Image for simulation
+├── Dockerfile.train      # Image for training
+└── README.md            # This file
 ```
 
-## 使用方法
+## Usage
 
-### 1. 全サービス起動
+### 1. Start All Services
 ```bash
-# プロジェクトルートから実行
+# Run from project root
 make compose-up
 
-# または直接docker-composeコマンド
+# Or use docker-compose command directly
 docker-compose -f docker/docker-compose.yml up --build
 ```
 
-### 2. 個別サービス起動
+### 2. Start Individual Services
 ```bash
-# GTFSデータ取得のみ
+# GTFS data collection only
 make compose-ingest
 
-# シミュレーションのみ
+# Simulation only
 make compose-sim
 
-# 学習のみ
+# Training only
 make compose-train
 ```
 
-### 3. 個別イメージビルド
+### 3. Build Individual Images
 ```bash
-# ベースイメージ
+# Base image
 make build-base
 
-# GTFSデータ取得イメージ
+# GTFS data collection image
 make build-ingest
 
-# シミュレーションイメージ
+# Simulation image
 make build-sim
 
-# 学習イメージ
+# Training image
 make build-train
 ```
 
-## サービス詳細
+## Service Details
 
 ### gtfs-ingest
-- **目的**: GTFSデータの取得・保存
-- **実行間隔**: 20秒
-- **バックアップ**: Google Drive自動バックアップ（5分間隔）
-- **再起動**: 自動再起動（unless-stopped）
+- **Purpose**: GTFS data collection and storage
+- **Execution Interval**: 20 seconds
+- **Backup**: Google Drive auto backup (5-minute intervals)
+- **Restart**: Auto restart (unless-stopped)
 
 ### simulation
-- **目的**: SUMO/Flowシミュレーション実行
-- **実行**: 手動実行
-- **再起動**: なし
+- **Purpose**: SUMO/Flow simulation execution
+- **Execution**: Manual execution
+- **Restart**: None
 
 ### training
-- **目的**: 強化学習・最適化実行
-- **実行**: 手動実行
-- **再起動**: なし
+- **Purpose**: Reinforcement learning and optimization execution
+- **Execution**: Manual execution
+- **Restart**: None
 
-## ボリュームマウント
+## Volume Mounts
 
-### データディレクトリ
-- `../data` → `/app/data` - GTFSデータ保存
-- `../logs` → `/app/logs` - ログファイル
-- `../results` → `/app/results` - 実行結果
-- `../models` → `/app/models` - 学習済みモデル
+### Data Directories
+- `../data` → `/app/data` - GTFS data storage
+- `../logs` → `/app/logs` - Log files
+- `../results` → `/app/results` - Execution results
+- `../models` → `/app/models` - Trained models
 
-### 設定ディレクトリ
-- `../configs/google_drive` → `/app/configs/google_drive` - Google Drive認証
+### Configuration Directories
+- `../configs/google_drive` → `/app/configs/google_drive` - Google Drive API authentication (alternative to rclone)
 
-## 環境変数
+## Environment Variables
 
-### 共通
-- `PYTHONPATH=/app/src` - Pythonパス設定
+### Common
+- `PYTHONPATH=/app/src` - Python path configuration
 
 ### gtfs-ingest
-- `GOOGLE_DRIVE_ENABLED=true` - Google Drive自動バックアップ有効
-- `BACKUP_INTERVAL=300` - バックアップ間隔（秒）
+- `GOOGLE_DRIVE_ENABLED=true` - Google Drive API auto backup enabled (alternative to rclone)
+- `BACKUP_INTERVAL=300` - Backup interval (seconds)
 
 ### simulation
-- `SUMO_HOME=/opt/sumo` - SUMOインストールパス
+- `SUMO_HOME=/opt/sumo` - SUMO installation path
 
-## トラブルシューティング
+## Troubleshooting
 
-### 1. ビルドエラー
+### 1. Build Errors
 ```bash
-# キャッシュをクリアして再ビルド
+# Clear cache and rebuild
 make clean
 make build-all
 ```
 
-### 2. ボリュームマウントエラー
+### 2. Volume Mount Errors
 ```bash
-# ディレクトリの存在確認
+# Check directory existence
 ls -la ../data ../logs ../results ../models
 ```
 
-### 3. 権限エラー
+### 3. Permission Errors
 ```bash
-# ディレクトリの権限確認
+# Check directory permissions
 ls -la ../data ../logs
 ```
 
-## 開発時の注意点
+## Development Notes
 
-1. **Dockerfileの変更**: イメージ再ビルドが必要
-2. **docker-compose.ymlの変更**: サービス再起動が必要
-3. **ボリュームマウント**: 相対パス（`../`）を使用
-4. **環境変数**: 各サービスに適切な値を設定
+1. **Dockerfile Changes**: Image rebuild required
+2. **docker-compose.yml Changes**: Service restart required
+3. **Volume Mounts**: Use relative paths (`../`)
+4. **Environment Variables**: Set appropriate values for each service
 
-## パフォーマンス最適化
+## Performance Optimization
 
-### マルチステージビルド
-- ベースイメージで重い依存関係を一度だけインストール
-- 派生イメージで軽量な依存関係のみ追加
+### Multi-stage Build
+- Install heavy dependencies once in base image
+- Add only lightweight dependencies in derived images
 
-### レイヤーキャッシュ
-- 変更頻度の低いレイヤーを先に配置
-- 依存関係のインストールを分離
+### Layer Caching
+- Place low-change-frequency layers first
+- Separate dependency installation
 
-### イメージサイズ最適化
-- 不要なファイルの削除
-- マルチステージビルドの活用
+### Image Size Optimization
+- Remove unnecessary files
+- Utilize multi-stage builds

@@ -1,183 +1,191 @@
 # Tram Delay Reduction Management
 
-路面電車の遅延削減を目的とした、GTFSデータ収集・分析・最適化システムです。
+A GTFS data collection, analysis, and optimization system designed to reduce tram delays.
 
-## 概要
+## Overview
 
-- **GTFSデータ収集**: 20秒間隔でのリアルタイムデータ取得
-- **自動バックアップ**: Google Driveへの自動アップロード
-- **シミュレーション**: SUMO/Flowを使用した交通シミュレーション
-- **最適化**: 強化学習・数理最適化による遅延削減
+- **GTFS Data Collection**: Real-time data acquisition at 20-second intervals
+- **Auto Backup**: Automatic upload to Google Drive
+- **Simulation**: Traffic simulation using SUMO/Flow
+- **Optimization**: Delay reduction through reinforcement learning and mathematical optimization
 
-## クイックスタート
+## Quick Start
 
-### 1. 依存関係のインストール
+### 1. Install Dependencies
 ```bash
 # Docker & Docker Compose
 sudo apt update
 sudo apt install docker.io docker-compose
 
-# rclone（Google Drive連携用）
+# rclone (for Google Drive integration)
 sudo apt install rclone
 ```
 
-### 2. Google Drive設定（オプション）
+### 2. Google Drive Setup (Optional)
 ```bash
-# rclone設定
+# rclone configuration
 rclone config
 cp ~/.config/rclone/rclone.conf ./configs/rclone/
 ```
 
-### 3. 実行
+### 3. Run
 ```bash
-# GTFSデータ収集開始
+# Start GTFS data collection
 make run-ingest-rclone
 
-# または全サービス起動
+# Or start all services
 make compose-up
 ```
 
-## ディレクトリ構成
+## Directory Structure
 
 ```
 tram-delay-reduction-management/
-├── docs/                    # ドキュメント
-│   └── GOOGLE_DRIVE.md     # Google Drive連携
-├── docker/                  # Docker設定
-│   ├── docker-compose.yml  # サービス定義
-│   ├── Dockerfile.base     # ベースイメージ
-│   ├── Dockerfile.ingest   # データ収集
-│   ├── Dockerfile.sim      # シミュレーション
-│   └── Dockerfile.train    # 学習
-├── requirements/            # Python依存関係
-│   ├── base.txt            # 共通依存
-│   ├── ingest.txt          # データ収集
-│   ├── sim.txt             # シミュレーション
-│   └── train.txt           # 学習
-├── src/                    # ソースコード
-│   ├── gtfs_pipeline/      # GTFSデータ処理
-│   ├── simulation/         # シミュレーション
-│   └── training/           # 学習
-├── configs/                # 設定ファイル
-│   ├── rclone/             # rclone設定
-│   └── google_drive/       # Google Drive API設定
-├── scripts/                # スクリプト
+├── docs/                    # Documentation
+│   ├── GOOGLE_DRIVE.md     # Google Drive integration overview
+│   ├── GOOGLE_DRIVE_API.md # Google Drive API setup
+│   ├── RCLONE_SETUP.md     # rclone configuration
+│   └── REQUIREMENTS.md     # Dependencies management
+├── docker/                  # Docker configuration
+│   ├── docker-compose.yml  # Service definitions
+│   ├── Dockerfile.base     # Base image
+│   ├── Dockerfile.ingest   # Data collection
+│   ├── Dockerfile.sim      # Simulation
+│   └── Dockerfile.train    # Training
+├── requirements/            # Python dependencies
+│   ├── base.txt            # Common dependencies
+│   ├── ingest.txt          # Data collection
+│   ├── sim.txt             # Simulation
+│   └── train.txt           # Training
+├── src/                    # Source code
+│   ├── gtfs_pipeline/      # GTFS data processing
+│   ├── simulation/         # Simulation
+│   └── training/           # Training
+├── configs/                # Configuration files
+│   ├── rclone/             # rclone configuration (recommended)
+│   └── google_drive/       # Google Drive API configuration (alternative)
+├── scripts/                # Scripts
 │   └── backup_to_google_drive.sh
-├── data/                   # データ保存
-├── logs/                   # ログファイル
-└── Makefile               # ビルド・実行コマンド
+├── data/                   # Data storage
+├── logs/                   # Log files
+└── Makefile               # Build and execution commands
 ```
 
-## 主要機能
+## Key Features
 
-### GTFSデータ収集
-- **間隔**: 20秒
-- **データ**: GTFS Static, Trip Updates, Vehicle Positions
-- **保存**: ローカル + Google Drive自動バックアップ
+### GTFS Data Collection
+- **Interval**: 20 seconds
+- **Data**: GTFS Static, Trip Updates, Vehicle Positions
+- **Storage**: Local + Google Drive auto backup
 
-### シミュレーション
-- **エンジン**: SUMO/Flow
-- **用途**: 交通流シミュレーション
-- **出力**: 遅延分析結果
+### Simulation
+- **Engine**: SUMO/Flow
+- **Purpose**: Traffic flow simulation
+- **Output**: Delay analysis results
 
-### 最適化
-- **手法**: 強化学習（Q-DDQN）、数理最適化
-- **目的**: 遅延削減
-- **出力**: 最適化された運行計画
+### Optimization
+- **Methods**: Reinforcement learning (Q-DDQN), mathematical optimization
+- **Goal**: Delay reduction
+- **Output**: Optimized operation plans
 
-## 使用方法
+## Usage
 
-### データ収集
+### Data Collection
 ```bash
-# rclone使用（推奨）
+# Using rclone (recommended)
 make run-ingest-rclone
 
-# Google Drive API使用
+# Using Google Drive API
 make run-ingest
 
-# バックアップなし
+# Without backup
 make run-ingest-no-backup
 ```
 
-### シミュレーション
+### Simulation
 ```bash
 make run-sim
 ```
 
-### 学習
+### Training
 ```bash
 make run-train
 ```
 
-### 全サービス
+### All Services
 ```bash
 make compose-up
 ```
 
-## 設定
+## Configuration
 
-### 環境変数
-- `RCLONE_ENABLED`: rclone自動バックアップ
-- `GOOGLE_DRIVE_ENABLED`: Google Drive API自動バックアップ
-- `BACKUP_INTERVAL`: バックアップ間隔（秒）
+### Environment Variables
+- `RCLONE_ENABLED`: rclone auto backup (recommended)
+- `GOOGLE_DRIVE_ENABLED`: Google Drive API auto backup (alternative)
+- `BACKUP_INTERVAL`: Backup interval (seconds)
 
-### 設定ファイル
-- `configs/rclone/rclone.conf`: rclone設定
-- `configs/google_drive/`: Google Drive API設定
+### Configuration Files
+- `configs/rclone/rclone.conf`: rclone configuration (recommended)
+- `configs/google_drive/`: Google Drive API configuration (alternative)
 
-## トラブルシューティング
+### Documentation
+- `docs/RCLONE_SETUP.md`: Complete rclone setup guide
+- `docs/GOOGLE_DRIVE_API.md`: Google Drive API setup guide
+- `docs/REQUIREMENTS.md`: Dependencies management guide
 
-### ビルドエラー
+## Troubleshooting
+
+### Build Errors
 ```bash
 make clean
 make build-all
 ```
 
-### 認証エラー
-- rclone設定を確認: `rclone lsd gdrive:`
-- Google Drive API設定を確認: `docs/GOOGLE_DRIVE.md`
+### Authentication Errors
+- Check rclone configuration: `rclone lsd gdrive:`
+- Check Google Drive API configuration: `docs/GOOGLE_DRIVE.md`
 
-### ログ確認
+### Log Checking
 ```bash
-# アプリケーションログ
+# Application logs
 tail -f logs/ingest.log
 
-# バックアップログ
+# Backup logs
 tail -f logs/backup.log
 ```
 
-## 開発
+## Development
 
-### 依存関係追加
+### Adding Dependencies
 ```bash
-# 全ジョブ共通
+# Common for all jobs
 echo "package>=1.0.0" >> requirements/base.txt
 
-# 特定ジョブ専用
+# Specific job only
 echo "package>=1.0.0" >> requirements/ingest.txt
 ```
 
-### ビルド
+### Building
 ```bash
-# 個別ビルド
+# Individual builds
 make build-ingest
 make build-sim
 make build-train
 
-# 全ビルド
+# Build all
 make build-all
 ```
 
-## ライセンス
+## License
 
 MIT License
 
-## 貢献
+## Contributing
 
-プルリクエストやイシューの報告を歓迎します。
+Pull requests and issue reports are welcome.
 
-## 参考資料
+## References
 
-- [GTFS仕様](https://developers.google.com/transit/gtfs)
-- [SUMO公式ドキュメント](https://sumo.dlr.de/docs/)
-- [rclone公式ドキュメント](https://rclone.org/)
+- [GTFS Specification](https://developers.google.com/transit/gtfs)
+- [SUMO Official Documentation](https://sumo.dlr.de/docs/)
+- [rclone Official Documentation](https://rclone.org/)

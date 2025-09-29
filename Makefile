@@ -1,24 +1,24 @@
 # Makefile for Tram Delay Reduction Management
 
-# イメージ名
+# Image names
 BASE_IMAGE = tram-base:latest
 INGEST_IMAGE = tram-ingest:latest
 SIM_IMAGE = tram-sim:latest
 TRAIN_IMAGE = tram-train:latest
 
-# Docker Compose設定
+# Docker Compose configuration
 COMPOSE_FILE = docker/docker-compose.yml
 
-# ビルドターゲット
+# Build targets
 .PHONY: build-base build-ingest build-sim build-train build-all
 .PHONY: run-ingest run-sim run-train
 .PHONY: clean help
 
-# ベースイメージをビルド（重い依存を一度だけ）
+# Build base image (heavy dependencies once)
 build-base:
 	docker build -f docker/Dockerfile.base -t $(BASE_IMAGE) .
 
-# 各ジョブ用イメージをビルド（軽量・高速）
+# Build job-specific images (lightweight & fast)
 build-ingest: build-base
 	docker build -f docker/Dockerfile.ingest -t $(INGEST_IMAGE) .
 
@@ -28,42 +28,42 @@ build-sim: build-base
 build-train: build-base
 	docker build -f docker/Dockerfile.train -t $(TRAIN_IMAGE) .
 
-# 全イメージをビルド
+# Build all images
 build-all: build-ingest build-sim build-train
 
-# データ取得実行（連続実行 + Google Drive自動バックアップ）
+# Run data ingestion (continuous + Google Drive auto backup)
 run-ingest: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs/google_drive:/app/configs/google_drive -e GOOGLE_DRIVE_ENABLED=true -e BACKUP_INTERVAL=300 $(INGEST_IMAGE)
 
-# データ取得実行（一回だけ）
+# Run data ingestion (single run)
 run-ingest-once: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs $(INGEST_IMAGE) --feed-type all --once
 
-# データ取得実行（Google Drive自動バックアップなし）
+# Run data ingestion (no Google Drive auto backup)
 run-ingest-no-backup: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -e GOOGLE_DRIVE_ENABLED=false $(INGEST_IMAGE)
 
-# データ取得実行（カスタムバックアップ間隔）
+# Run data ingestion (custom backup interval)
 run-ingest-backup-custom: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs/google_drive:/app/configs/google_drive -e GOOGLE_DRIVE_ENABLED=true -e BACKUP_INTERVAL=600 $(INGEST_IMAGE)
 
-# データ取得実行（rclone自動バックアップ）
+# Run data ingestion (rclone auto backup)
 run-ingest-rclone: build-ingest
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs/rclone:/root/.config/rclone -e RCLONE_ENABLED=true -e BACKUP_INTERVAL=300 $(INGEST_IMAGE)
 
-# シミュレーション実行
+# Run simulation
 run-sim: build-sim
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/results:/app/results $(SIM_IMAGE)
 
-# 学習実行
+# Run training
 run-train: build-train
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/models:/app/models -v $(PWD)/results:/app/results $(TRAIN_IMAGE)
 
-# Docker Compose実行
+# Run with Docker Compose
 compose-up:
 	docker-compose -f $(COMPOSE_FILE) up --build
 
-# 個別サービス実行
+# Run individual services
 compose-ingest:
 	docker-compose -f $(COMPOSE_FILE) up gtfs-ingest
 
@@ -73,12 +73,12 @@ compose-sim:
 compose-train:
 	docker-compose -f $(COMPOSE_FILE) up training
 
-# クリーンアップ
+# Cleanup
 clean:
 	docker rmi $(BASE_IMAGE) $(INGEST_IMAGE) $(SIM_IMAGE) $(TRAIN_IMAGE) 2>/dev/null || true
 	docker system prune -f
 
-# ヘルプ
+# Help
 help:
 	@echo "Available targets:"
 	@echo "  build-base   - Build base image (heavy dependencies)"

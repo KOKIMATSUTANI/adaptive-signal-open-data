@@ -1,7 +1,7 @@
 """
-Google Drive連携モジュール
+Google Drive Integration Module
 
-GTFSデータをGoogle Driveに自動アップロードする機能を提供
+Provides functionality for automatically uploading GTFS data to Google Drive
 """
 
 import os
@@ -23,18 +23,18 @@ from .config import GTFSConfig
 
 class GoogleDriveManager:
     """
-    Google Drive連携管理クラス
+    Google Drive integration management class
     """
     
-    # Google Drive API スコープ
+    # Google Drive API scopes
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     
     def __init__(self, config: GTFSConfig):
         """
-        Google Drive Manager初期化
+        Initialize Google Drive Manager
         
         Args:
-            config: GTFS設定オブジェクト
+            config: GTFS configuration object
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
@@ -44,13 +44,13 @@ class GoogleDriveManager:
         
     def authenticate(self) -> bool:
         """
-        Google Drive認証を実行
+        Execute Google Drive authentication
         
         Returns:
             True if authentication successful, False otherwise
         """
         try:
-            # 認証情報ファイルのパス
+            # Credentials file paths
             creds_file = os.path.join(self.config.data_directory, 'credentials.json')
             token_file = os.path.join(self.config.data_directory, 'token.json')
             
@@ -59,7 +59,7 @@ class GoogleDriveManager:
                 self.logger.info("Please download credentials.json from Google Cloud Console")
                 return False
             
-            # 認証フロー
+            # Authentication flow
             creds = None
             if os.path.exists(token_file):
                 creds = Credentials.from_authorized_user_file(token_file, self.SCOPES)
@@ -71,14 +71,14 @@ class GoogleDriveManager:
                     flow = InstalledAppFlow.from_client_secrets_file(creds_file, self.SCOPES)
                     creds = flow.run_local_server(port=0)
                 
-                # トークンを保存
+                # Save token
                 with open(token_file, 'w') as token:
                     token.write(creds.to_json())
             
-            # Drive API サービスを構築
+            # Build Drive API service
             self.drive_service = build('drive', 'v3', credentials=creds)
             
-            # PyDrive2認証
+            # PyDrive2 authentication
             self.gauth = GoogleAuth()
             self.gauth.credentials = creds
             self.drive = GoogleDrive(self.gauth)
@@ -92,14 +92,14 @@ class GoogleDriveManager:
     
     def create_folder(self, folder_name: str, parent_folder_id: Optional[str] = None) -> Optional[str]:
         """
-        Google Driveにフォルダを作成
+        Create folder in Google Drive
         
         Args:
-            folder_name: フォルダ名
-            parent_folder_id: 親フォルダID（Noneの場合はルート）
+            folder_name: Folder name
+            parent_folder_id: Parent folder ID (None for root)
             
         Returns:
-            作成されたフォルダのID、失敗時はNone
+            Created folder ID, None if failed
         """
         try:
             folder_metadata = {
@@ -125,14 +125,14 @@ class GoogleDriveManager:
     
     def find_folder(self, folder_name: str, parent_folder_id: Optional[str] = None) -> Optional[str]:
         """
-        Google Driveでフォルダを検索
+        Search for folder in Google Drive
         
         Args:
-            folder_name: フォルダ名
-            parent_folder_id: 親フォルダID
+            folder_name: Folder name
+            parent_folder_id: Parent folder ID
             
         Returns:
-            フォルダのID、見つからない場合はNone
+            Folder ID, None if not found
         """
         try:
             query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
@@ -160,12 +160,12 @@ class GoogleDriveManager:
     def upload_file(self, file_path: str, folder_id: Optional[str] = None, 
                    file_name: Optional[str] = None) -> bool:
         """
-        ファイルをGoogle Driveにアップロード
+        Upload file to Google Drive
         
         Args:
-            file_path: アップロードするファイルのパス
-            folder_id: アップロード先フォルダID
-            file_name: アップロード時のファイル名（Noneの場合は元のファイル名）
+            file_path: Path to file to upload
+            folder_id: Destination folder ID
+            file_name: File name for upload (None for original filename)
             
         Returns:
             True if successful, False otherwise
@@ -178,15 +178,15 @@ class GoogleDriveManager:
             if file_name is None:
                 file_name = os.path.basename(file_path)
             
-            # ファイルメタデータ
+            # File metadata
             file_metadata = {'name': file_name}
             if folder_id:
                 file_metadata['parents'] = [folder_id]
             
-            # メディアファイル
+            # Media file
             media = MediaFileUpload(file_path, resumable=True)
             
-            # アップロード実行
+            # Execute upload
             file = self.drive_service.files().create(
                 body=file_metadata,
                 media_body=media,
@@ -203,21 +203,21 @@ class GoogleDriveManager:
     
     def upload_gtfs_data(self, data_directory: str) -> bool:
         """
-        GTFSデータをGoogle Driveにアップロード
+        Upload GTFS data to Google Drive
         
         Args:
-            data_directory: GTFSデータが保存されているディレクトリ
+            data_directory: Directory where GTFS data is stored
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            # 認証チェック
+            # Check authentication
             if not self.drive_service:
                 if not self.authenticate():
                     return False
             
-            # 日付フォルダを作成
+            # Create date folder
             today = datetime.now().strftime("%Y-%m-%d")
             date_folder_id = self.find_folder(today)
             if not date_folder_id:
@@ -225,24 +225,24 @@ class GoogleDriveManager:
                 if not date_folder_id:
                     return False
             
-            # GTFSデータフォルダを作成
+            # Create GTFS data folder
             gtfs_folder_id = self.find_folder("GTFS_Data", date_folder_id)
             if not gtfs_folder_id:
                 gtfs_folder_id = self.create_folder("GTFS_Data", date_folder_id)
                 if not gtfs_folder_id:
                     return False
             
-            # データディレクトリ内のファイルをアップロード
+            # Upload files in data directory
             data_path = Path(data_directory)
             uploaded_count = 0
             
             for file_path in data_path.rglob("*"):
                 if file_path.is_file():
-                    # 相対パスでフォルダ構造を維持
+                    # Maintain folder structure with relative paths
                     relative_path = file_path.relative_to(data_path)
                     folder_structure = relative_path.parent
                     
-                    # サブフォルダを作成
+                    # Create subfolders
                     current_folder_id = gtfs_folder_id
                     if folder_structure != Path('.'):
                         for folder_name in folder_structure.parts:
@@ -251,7 +251,7 @@ class GoogleDriveManager:
                                 sub_folder_id = self.create_folder(folder_name, current_folder_id)
                             current_folder_id = sub_folder_id
                     
-                    # ファイルをアップロード
+                    # Upload file
                     if self.upload_file(str(file_path), current_folder_id):
                         uploaded_count += 1
             

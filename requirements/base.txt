@@ -1,27 +1,27 @@
-# 全ジョブ共通の依存関係（重い依存をここで一度だけインストール）
-# データ処理・分析の基盤
+# Common dependencies for all jobs (install heavy dependencies once)
+# Data processing and analysis foundation
 pandas>=1.5.0
 numpy>=1.21.0
 pyarrow>=10.0.0
 
-# 非同期処理・HTTP通信
+# Async processing and HTTP communication
 aiohttp>=3.8.0
 
-# データベース接続
+# Database connections
 asyncpg>=0.28.0
 sqlalchemy>=2.0.0
 
-# CLI・設定管理
+# CLI and configuration management
 click>=8.0.0
 
-# プロトコルバッファ
+# Protocol buffers
 protobuf>=4.0.0
 gtfs-realtime-bindings>=1.0.0
 
-# ログ・設定
+# Logging and configuration
 python-dotenv>=1.0.0
 
-# Google Drive連携
+# Google Drive integration
 google-auth>=2.17.0
 google-auth-oauthlib>=1.0.0
 google-auth-httplib2>=0.1.0

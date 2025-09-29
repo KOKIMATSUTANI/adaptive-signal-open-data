@@ -1,21 +1,21 @@
 #!/bin/bash
-# Google Drive自動バックアップスクリプト
-# GTFSデータをGoogle Driveに自動アップロード
+# Google Drive auto backup script
+# Automatically upload GTFS data to Google Drive
 
 set -e
 
-# 設定
+# Configuration
 DATA_DIR="/app/data"
 LOG_DIR="/app/logs"
-BACKUP_INTERVAL=${BACKUP_INTERVAL:-300}  # デフォルト5分間隔
+BACKUP_INTERVAL=${BACKUP_INTERVAL:-300}  # Default 5-minute interval
 GOOGLE_DRIVE_ENABLED=${GOOGLE_DRIVE_ENABLED:-true}
 
-# ログ関数
+# Log function
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_DIR/backup.log"
 }
 
-# Google Drive認証チェック
+# Google Drive authentication check
 check_google_drive_auth() {
     if [ "$GOOGLE_DRIVE_ENABLED" = "true" ]; then
         if [ ! -f "/app/configs/google_drive/credentials.json" ]; then
@@ -33,7 +33,7 @@ check_google_drive_auth() {
     fi
 }
 
-# データバックアップ
+# Data backup
 backup_data() {
     local backup_type="$1"
     local source_path="$2"
@@ -46,7 +46,7 @@ backup_data() {
     
     log "Starting backup: $backup_name"
     
-    # PythonスクリプトでGoogle Driveにアップロード
+    # Upload to Google Drive using Python script
     python3 -c "
 import sys
 sys.path.append('/app/src')
@@ -75,11 +75,11 @@ except Exception as e:
     fi
 }
 
-# メイン処理
+# Main processing
 main() {
     log "Starting Google Drive backup service"
     
-    # Google Drive認証チェック
+    # Google Drive authentication check
     if ! check_google_drive_auth; then
         log "Google Drive backup not available. Exiting."
         exit 0
@@ -88,11 +88,11 @@ main() {
     log "Google Drive backup enabled. Starting backup loop..."
     
     while true; do
-        # データディレクトリの監視
+        # Monitor data directory
         if [ -d "$DATA_DIR" ]; then
-            # 最新のファイルをバックアップ
+            # Backup latest files
             find "$DATA_DIR" -type f -name "*.json" -o -name "*.zip" -o -name "*.parquet" | while read -r file; do
-                # ファイルの更新時間をチェック（5分以内に更新されたファイルのみ）
+                # Check file modification time (only files updated within 5 minutes)
                 if [ $(find "$file" -mmin -5 | wc -l) -gt 0 ]; then
                     filename=$(basename "$file")
                     timestamp=$(date '+%Y%m%d_%H%M%S')
@@ -103,7 +103,7 @@ main() {
             done
         fi
         
-        # ログファイルのバックアップ（1時間に1回）
+        # Log file backup (once per hour)
         if [ -d "$LOG_DIR" ] && [ $(date '+%M') = "00" ]; then
             find "$LOG_DIR" -name "*.log" -mmin -60 | while read -r logfile; do
                 filename=$(basename "$logfile")
@@ -114,14 +114,14 @@ main() {
             done
         fi
         
-        # 待機
+        # Wait
         log "Waiting ${BACKUP_INTERVAL} seconds until next backup cycle..."
         sleep "$BACKUP_INTERVAL"
     done
 }
 
-# シグナルハンドリング
+# Signal handling
 trap 'log "Backup service stopped"; exit 0' SIGTERM SIGINT
 
-# メイン実行
+# Main execution
 main "$@"
