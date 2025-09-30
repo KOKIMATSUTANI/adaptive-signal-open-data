@@ -34,8 +34,9 @@ results/**/*.pb
 logs/**/*.pb
 
 # --- Google Drive認証情報 ---
-configs/google_drive/credentials.json
-configs/google_drive/token.json
+#configs/google_drive/credentials.json
+#configs/google_drive/token.json
+configs/*
 
 # --- SUMO / Flow auto-generated files ---
 # (simulation network conversion outputs, etc.)
@@ -85,3 +86,10 @@ latex_files/build/
 # --- Jupyter / experiments ---
 *.ipynb_checkpoints
 notebooks/.ipynb_checkpoints/
+configs/rclone/rclone.conf
+.config/rclone/rclone.conf
+*.conf
+.config/rclone/rclone.conf
+*.conf
+
+.envrc
