@@ -11,7 +11,7 @@ SIM_IMAGE = tram-sim:latest
 TRAIN_IMAGE = tram-train:latest
 
 # Docker Compose configuration
-COMPOSE_FILE = docker/docker-compose.yml
+COMPOSE_FILE = docker/docker compose.yml
 
 # Build targets
 .PHONY: build-base build-ingest build-ingest-realtime build-backup build-sim build-train build-all
@@ -64,19 +64,19 @@ run-train: build-train
 
 # Run with Docker Compose (short-lived tasks)
 compose-ingest:
-	docker-compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-static
+	docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-static
 
 compose-ingest-realtime:
-	docker-compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
+	docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
 compose-backup:
-	docker-compose -f $(COMPOSE_FILE) run --rm backup
+	docker compose -f $(COMPOSE_FILE) run --rm backup
 
 compose-sim:
-	docker-compose -f $(COMPOSE_FILE) run --rm simulation
+	docker compose -f $(COMPOSE_FILE) run --rm simulation
 
 compose-train:
-	docker-compose -f $(COMPOSE_FILE) run --rm training
+	docker compose -f $(COMPOSE_FILE) run --rm training
 
 # Scheduler for automated execution
 scheduler:
@@ -122,11 +122,11 @@ help:
 	@echo "  run-backup   - Run backup (single execution)"
 	@echo "  run-sim      - Run simulation"
 	@echo "  run-train    - Run training"
-	@echo "  compose-ingest - Run GTFS Static ingestion with docker-compose"
-	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with docker-compose (single execution)"
-	@echo "  compose-backup - Run backup with docker-compose"
-	@echo "  compose-sim  - Run simulation with docker-compose"
-	@echo "  compose-train - Run training with docker-compose"
+	@echo "  compose-ingest - Run GTFS Static ingestion with docker compose"
+	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with docker compose (single execution)"
+	@echo "  compose-backup - Run backup with docker compose"
+	@echo "  compose-sim  - Run simulation with docker compose"
+	@echo "  compose-train - Run training with docker compose"
 	@echo "  scheduler    - Run automated scheduler (static ingest + backup)"
 	@echo "  scheduler-once - Run scheduler once (single execution)"
 	@echo "  scheduler-realtime - Run real-time scheduler (RT data every 20s + backup)"

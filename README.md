@@ -15,7 +15,7 @@ A GTFS data collection, analysis, and optimization system designed to reduce tra
 ```bash
 # Docker & Docker Compose
 sudo apt update
-sudo apt install docker.io docker-compose
+sudo apt install docker.io docker compose
 
 # rclone (for Google Drive integration)
 sudo apt install rclone
@@ -47,7 +47,7 @@ tram-delay-reduction-management/
 │   ├── RCLONE_SETUP.md     # rclone configuration
 │   └── REQUIREMENTS.md     # Dependencies management
 ├── docker/                  # Docker configuration
-│   ├── docker-compose.yml  # Service definitions
+│   ├── docker compose.yml  # Service definitions
 │   ├── Dockerfile.base     # Base image
 │   ├── Dockerfile.ingest   # Data collection
 │   ├── Dockerfile.sim      # Simulation

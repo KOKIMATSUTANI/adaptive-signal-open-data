@@ -22,7 +22,7 @@ log() {
 run_rt_ingest() {
     log "Starting GTFS-RT ingestion task"
     cd "$PROJECT_DIR"
-    docker-compose -f docker/docker-compose.yml run --rm gtfs-ingest-realtime
+    docker compose -f docker/docker compose.yml run --rm gtfs-ingest-realtime
     log "GTFS-RT ingestion task completed"
 }
 
@@ -30,7 +30,7 @@ run_rt_ingest() {
 # run_backup() {
 #     log "Starting backup task"
 #     cd "$PROJECT_DIR"
-#     docker-compose -f docker/docker-compose.yml run --rm backup
+#     docker compose -f docker/docker compose.yml run --rm backup
 #     log "Backup task completed"
 # }
 
