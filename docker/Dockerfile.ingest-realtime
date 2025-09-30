@@ -9,8 +9,12 @@ WORKDIR /app
 
 # Add only lightweight dependencies for ingestion (install as root user)
 COPY requirements/ingest.txt /tmp/requirements-ingest.txt
-RUN pip install -r /tmp/requirements-ingest.txt \
+RUN pip install --no-cache-dir -r /tmp/requirements-ingest.txt \
     && rm /tmp/requirements-ingest.txt
+
+# timezone and flush buffer
+ENV TZ=Asia/Tokyo
+ENV PYTHONUNBUFFERED=1    
 
 # Copy only necessary code for ingestion
 COPY src/gtfs_pipeline/ ./src/gtfs_pipeline/
