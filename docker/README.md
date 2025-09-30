@@ -39,7 +39,7 @@ make run-train
 
 ```
 docker/
-├── docker compose.yml    # Orchestration for all services
+├── docker-compose.yml    # Orchestration for all services
 ├── Dockerfile.base       # Base image (common dependencies)
 ├── Dockerfile.ingest     # Image for GTFS data collection
 ├── Dockerfile.sim        # Image for simulation
@@ -55,7 +55,7 @@ docker/
 make compose-up
 
 # Or use docker compose command directly
-docker compose -f docker/docker compose.yml up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 ### 2. Start Individual Services
@@ -150,7 +150,7 @@ ls -la ../data ../logs
 ## Development Notes
 
 1. **Dockerfile Changes**: Image rebuild required
-2. **docker compose.yml Changes**: Service restart required
+2. **docker-compose.yml Changes**: Service restart required
 3. **Volume Mounts**: Use relative paths (`../`)
 4. **Environment Variables**: Set appropriate values for each service
 

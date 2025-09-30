@@ -11,7 +11,7 @@ SIM_IMAGE = tram-sim:latest
 TRAIN_IMAGE = tram-train:latest
 
 # Docker Compose configuration
-COMPOSE_FILE = docker/docker compose.yml
+COMPOSE_FILE = docker/docker-compose.yml
 
 # Build targets
 .PHONY: build-base build-ingest build-ingest-realtime build-backup build-sim build-train build-all

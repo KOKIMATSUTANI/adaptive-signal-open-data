@@ -47,7 +47,7 @@ tram-delay-reduction-management/
 │   ├── RCLONE_SETUP.md     # rclone configuration
 │   └── REQUIREMENTS.md     # Dependencies management
 ├── docker/                  # Docker configuration
-│   ├── docker compose.yml  # Service definitions
+│   ├── docker-compose.yml  # Service definitions
 │   ├── Dockerfile.base     # Base image
 │   ├── Dockerfile.ingest   # Data collection
 │   ├── Dockerfile.sim      # Simulation
