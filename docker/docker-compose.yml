@@ -1,5 +1,3 @@
-version: '3.8'
-
 # NOTE: Do not use chmod 777 or 666.
 # Use proper ownership (chown) and safe permissions instead (chmod 755).
 
