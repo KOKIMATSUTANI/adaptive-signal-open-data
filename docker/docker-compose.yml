@@ -45,7 +45,7 @@ services:
         APP_UID: 1000
         APP_GID: 1000
     volumes:
-      - ../data/raw:/app/data        
+      - ../data:/app/data        
       - ../logs:/app/logs
       - ../configs:/app/configs
     environment: *common-environment
