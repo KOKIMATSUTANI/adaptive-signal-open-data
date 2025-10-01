@@ -8,9 +8,11 @@ FROM ${BASE_IMAGE}
 WORKDIR /app
 
 # Add only lightweight dependencies for ingestion (install as root user)
+USER root
 COPY requirements/ingest.txt /tmp/requirements-ingest.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-ingest.txt \
     && rm /tmp/requirements-ingest.txt
+USER appuser
 
 # timezone and flush buffer
 ENV TZ=Asia/Tokyo
