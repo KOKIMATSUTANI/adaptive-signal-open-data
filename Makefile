@@ -16,7 +16,7 @@ COMPOSE_FILE = docker/docker-compose.yml
 # Build targets
 .PHONY: build-base build-ingest build-ingest-realtime build-backup build-sim build-train build-all
 .PHONY: run-ingest run-ingest-realtime run-backup run-sim run-train
-.PHONY: compose-ingest compose-ingest-realtime compose-backup compose-sim compose-train
+.PHONY: compose-ingest compose-ingest-realtime compose-ingest-realtime-raw compose-backup compose-sim compose-train
 .PHONY: scheduler scheduler-once clean help
 
 # Build base image (heavy dependencies once)
@@ -50,6 +50,15 @@ run-ingest: build-ingest
 run-ingest-realtime: build-ingest-realtime
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type all --once
 
+run-ingest-realtime-raw: build-ingest-realtime
+	docker run --rm \
+		-e GTFS_RT_SAVE_PROTO=1 \
+		-e GTFS_STATIC_SAVE_ZIP=1 \
+		-v $(PWD)/data:/app/data \
+		-v $(PWD)/logs:/app/logs \
+		-v $(PWD)/configs:/app/configs \
+		$(INGEST_REALTIME_IMAGE) --feed-type all --once
+
 # Run backup (short-lived task)
 run-backup: build-backup
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs -v $(HOME)/.config/rclone:/root/.config/rclone:ro -v $(HOME)/.config/rclone:/home/appuser/.config/rclone:ro $(BACKUP_IMAGE) --once
@@ -68,6 +77,9 @@ compose-ingest:
 
 compose-ingest-realtime:
 	docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
+
+compose-ingest-realtime-raw:
+	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
 compose-backup:
 	docker compose -f $(COMPOSE_FILE) run --rm backup
@@ -119,11 +131,13 @@ help:
 	@echo "  build-all    - Build all images"
 	@echo "  run-ingest   - Run GTFS Static data ingestion (single execution)"
 	@echo "  run-ingest-realtime - Run GTFS-RT real-time data ingestion (single execution)"
+	@echo "  run-ingest-realtime-raw - Run GTFS-RT ingestion saving raw protobuf/ZIP artifacts"
 	@echo "  run-backup   - Run backup (single execution)"
 	@echo "  run-sim      - Run simulation"
 	@echo "  run-train    - Run training"
 	@echo "  compose-ingest - Run GTFS Static ingestion with docker compose"
 	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with docker compose (single execution)"
+	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
 	@echo "  compose-backup - Run backup with docker compose"
 	@echo "  compose-sim  - Run simulation with docker compose"
 	@echo "  compose-train - Run training with docker compose"

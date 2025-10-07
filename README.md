@@ -123,6 +123,8 @@ make compose-up
 - `RCLONE_ENABLED`: rclone auto backup (recommended)
 - `GOOGLE_DRIVE_ENABLED`: Google Drive API auto backup (alternative)
 - `BACKUP_INTERVAL`: Backup interval (seconds)
+- `GTFS_RT_SAVE_PROTO`: Set to `1` to archive raw GTFS-RT protobuf (`.pb`) alongside parsed JSON
+- `GTFS_STATIC_SAVE_ZIP`: Set to `1` to archive raw GTFS Static ZIP payloads alongside parsed JSON
 
 ### Configuration Files
 - `configs/rclone/rclone.conf`: rclone configuration (recommended)

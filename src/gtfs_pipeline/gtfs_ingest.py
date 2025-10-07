@@ -12,7 +12,7 @@ import zipfile
 import io
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 import aiohttp
@@ -84,7 +84,7 @@ class GTFSIngest:
             self.logger.error(f"Error fetching {feed_url}: {e}")
             return None
     
-    async def fetch_gtfs_static_data(self, feed_url: str) -> Optional[Dict[str, pd.DataFrame]]:
+    async def fetch_gtfs_static_data(self, feed_url: str) -> Optional[Tuple[Dict[str, pd.DataFrame], bytes]]:
         """
         Fetch and parse GTFS Static data from a given URL.
         
@@ -92,7 +92,7 @@ class GTFSIngest:
             feed_url: URL of the GTFS Static feed (ZIP file)
             
         Returns:
-            Dictionary of DataFrames with GTFS data or None if fetch failed
+            Tuple of (parsed tables, raw ZIP bytes) or None if fetch failed
         """
         try:
             self.logger.info(f"Fetching GTFS Static data from: {feed_url}")
@@ -121,7 +121,7 @@ class GTFSIngest:
                                 except Exception as e:
                                     self.logger.warning(f"Error reading {file_name}: {e}")
                     
-                    return gtfs_data
+                    return gtfs_data, zip_data
                 else:
                     self.logger.error(f"HTTP {response.status} error fetching {feed_url}")
                     return None
@@ -236,6 +236,7 @@ class GTFSIngest:
             raw_data = await self.fetch_gtfs_rt_data(feed_url)
             if not raw_data:
                 return False
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
             # Parse protobuf data
             parsed_data = self.parse_gtfs_rt_data(raw_data, feed_type)
@@ -243,7 +244,12 @@ class GTFSIngest:
                 return False
             
             # Store in database
-            success = await self.db_manager.store_gtfs_rt_data(parsed_data, feed_url)
+            success = await self.db_manager.store_gtfs_rt_data(
+                parsed_data,
+                feed_url,
+                raw_bytes=raw_data,
+                timestamp=timestamp,
+            )
             
             if success:
                 self.logger.info(f"Successfully ingested {feed_type} from {feed_url}")
@@ -265,12 +271,19 @@ class GTFSIngest:
         """
         try:
             # Fetch GTFS Static data
-            gtfs_data = await self.fetch_gtfs_static_data(self.config.gtfs_static_url)
-            if not gtfs_data:
+            fetch_result = await self.fetch_gtfs_static_data(self.config.gtfs_static_url)
+            if not fetch_result:
                 return False
+            gtfs_data, raw_zip = fetch_result
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
             # Store in database
-            success = await self.db_manager.store_gtfs_static_data(gtfs_data, self.config.gtfs_static_url)
+            success = await self.db_manager.store_gtfs_static_data(
+                gtfs_data,
+                self.config.gtfs_static_url,
+                raw_bytes=raw_zip,
+                timestamp=timestamp,
+            )
             
             if success:
                 self.logger.info(f"Successfully ingested GTFS Static data from {self.config.gtfs_static_url}")
