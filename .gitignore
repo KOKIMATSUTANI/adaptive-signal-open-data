@@ -93,3 +93,7 @@ configs/rclone/rclone.conf
 *.conf
 
 .envrc
+
+# --- Reveal.js slides ---
+reveal-slides/node_modules/
+reveal-slides/assets/
