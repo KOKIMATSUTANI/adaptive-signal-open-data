@@ -116,3 +116,13 @@
   border-radius: 4px;
   color: #9a3412;
 }
+
+.reveal .mermaid {
+  font-size: 1.4em;   /* scales all Mermaid elements */
+  max-width: 80%;     /* optionally limit width or set to 100% */
+}
+
+.reveal .mermaid svg {
+  max-width: 90%;
+  font-size: 20px;
+}

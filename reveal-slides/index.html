@@ -14,9 +14,11 @@
 
     <script src="node_modules/reveal.js/dist/reveal.js"></script>
     <script src="node_modules/reveal.js/plugin/markdown/markdown.js"></script>
+    <script src="node_modules/reveal.js-mermaid-plugin/plugin/mermaid/mermaid.js"></script>
+    
     <script>
       const urlParams = new URLSearchParams(window.location.search);
-      const file = urlParams.get('file') || 'slides_ja/wintersemester_01_2025-10-02.md';
+      const file = urlParams.get('file') || 'slides_ja/wintersemester_02_2025-10-09.md';
 
       document.querySelector('.slides').innerHTML =
         `<section data-markdown="${file}"
@@ -28,7 +30,12 @@
         hash: true,
         slideNumber: true,
         progress: true,
-        plugins: [ RevealMarkdown ]
+        width: 1280,
+        height: 720,
+        margin: 0.04,
+        minScale: 0.5,
+        maxScale: 1.5,
+        plugins: [ RevealMarkdown, RevealMermaid ]
       });
     </script>
   </body>
