@@ -29,6 +29,7 @@ class GTFSIngest:
     GTFS-RT data ingestion class for collecting real-time transit data.
     """
     
+    # Bootstrap ingestion state with configuration, logging and DB access.
     def __init__(self, config: GTFSConfig, db_manager: DatabaseManager):
         """
         Initialize the GTFS-RT ingestion system.
@@ -42,6 +43,7 @@ class GTFSIngest:
         self.logger = setup_logging(__name__)
         self.session: Optional[aiohttp.ClientSession] = None
         
+    # Open the shared HTTP session when the async context starts.
     async def __aenter__(self):
         """Async context manager entry."""
         self.session = aiohttp.ClientSession(
@@ -50,11 +52,13 @@ class GTFSIngest:
         )
         return self
         
+    # Ensure the HTTP session gets closed on context teardown.
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         if self.session:
             await self.session.close()
     
+    # Pull GTFS-RT protobuf payload from the upstream endpoint.
     async def fetch_gtfs_rt_data(self, feed_url: str) -> Optional[bytes]:
         """
         Fetch GTFS-RT data from a given URL.
@@ -84,6 +88,7 @@ class GTFSIngest:
             self.logger.error(f"Error fetching {feed_url}: {e}")
             return None
     
+    # Download the GTFS static bundle and unfold the core tables.
     async def fetch_gtfs_static_data(self, feed_url: str) -> Optional[Tuple[Dict[str, pd.DataFrame], bytes]]:
         """
         Fetch and parse GTFS Static data from a given URL.
@@ -133,6 +138,7 @@ class GTFSIngest:
             self.logger.error(f"Error fetching GTFS Static data from {feed_url}: {e}")
             return None
     
+    # Route raw GTFS-RT bytes to the correct parser for the feed type.
     def parse_gtfs_rt_data(self, data: bytes, feed_type: str) -> Dict:
         """
         Parse GTFS-RT protobuf data into structured format.
@@ -161,6 +167,7 @@ class GTFSIngest:
             self.logger.error(f"Error parsing GTFS-RT data: {e}")
             return {}
     
+    # Normalise trip update entities into dictionaries ready for persistence.
     def _parse_trip_updates(self, feed: gtfs_realtime_pb2.FeedMessage) -> Dict:
         """Parse trip updates from GTFS-RT feed."""
         trip_updates = []
@@ -187,6 +194,7 @@ class GTFSIngest:
             'trip_updates': trip_updates
         }
     
+    # Normalise vehicle position entities into downstream-friendly records.
     def _parse_vehicle_positions(self, feed: gtfs_realtime_pb2.FeedMessage) -> Dict:
         """Parse vehicle positions from GTFS-RT feed."""
         vehicle_positions = []
@@ -220,6 +228,7 @@ class GTFSIngest:
             'vehicle_positions': vehicle_positions
         }
 
+    # Execute fetch, parse, and persistence workflow for a real-time feed.
     async def ingest_feed(self, feed_url: str, feed_type: str) -> bool:
         """
         Ingest a single GTFS-RT feed.
@@ -262,6 +271,7 @@ class GTFSIngest:
             self.logger.error(f"Error ingesting {feed_type} from {feed_url}: {e}")
             return False
     
+    # Handle the static GTFS bundle ingestion once per run.
     async def ingest_gtfs_static(self) -> bool:
         """
         Ingest GTFS Static data.
@@ -296,6 +306,7 @@ class GTFSIngest:
             self.logger.error(f"Error ingesting GTFS Static data: {e}")
             return False
 
+    # Run one combined ingestion pass over static and RT feeds.
     async def ingest_all_feeds(self) -> Dict[str, bool]:
         """
         Ingest all configured GTFS-RT feeds and GTFS Static data.
@@ -320,6 +331,7 @@ class GTFSIngest:
         
         return results
     
+    # Keep ingesting on a schedule until cancelled.
     async def continuous_ingestion(self, interval: int = 60) -> None:
         """
         Run continuous ingestion at specified intervals.
@@ -349,7 +361,7 @@ class GTFSIngest:
                 self.logger.info(f"Waiting {interval} seconds before retry...")
                 await asyncio.sleep(interval)
 
-
+# Provide a CLI-style entry point when the module is executed directly.
 async def main():
     """Main function for running GTFS-RT ingestion."""
     config = GTFSConfig()

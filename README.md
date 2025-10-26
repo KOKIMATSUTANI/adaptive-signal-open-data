@@ -40,36 +40,32 @@ make compose-up
 ## Directory Structure
 
 ```
-tram-delay-reduction-management/
-├── docs/                    # Documentation
-│   ├── GOOGLE_DRIVE.md     # Google Drive integration overview
-│   ├── GOOGLE_DRIVE_API.md # Google Drive API setup
-│   ├── RCLONE_SETUP.md     # rclone configuration
-│   └── REQUIREMENTS.md     # Dependencies management
-├── docker/                  # Docker configuration
-│   ├── docker-compose.yml  # Service definitions
-│   ├── Dockerfile.base     # Base image
-│   ├── Dockerfile.ingest   # Data collection
-│   ├── Dockerfile.sim      # Simulation
-│   └── Dockerfile.train    # Training
-├── requirements/            # Python dependencies
-│   ├── base.txt            # Common dependencies
-│   ├── ingest.txt          # Data collection
-│   ├── sim.txt             # Simulation
-│   └── train.txt           # Training
-├── src/                    # Source code
-│   ├── gtfs_pipeline/      # GTFS data processing
-│   ├── simulation/         # Simulation
-│   └── training/           # Training
-├── configs/                # Configuration files
-│   ├── rclone/             # rclone configuration (recommended)
-│   └── google_drive/       # Google Drive API configuration (alternative)
-├── scripts/                # Scripts
-│   └── backup_to_google_drive.sh
-├── data/                   # Data storage
-├── logs/                   # Log files
-└── Makefile               # Build and execution commands
+adptive-signal-open-data/
+├── configs/                # Credentials & sync configuration templates
+│   ├── google_drive/       # Google Drive API OAuth/credential files
+│   └── rclone/             # rclone remote definitions and tokens
+├── data/                   # Local storage layers for collected feeds
+│   ├── bronze/
+│   ├── raw_GCP/
+│   ├── raw_test/
+│   └── silver/
+├── docker/                 # Container definitions and compose manifests
+├── docs/                   # Project documentation (setup guides, notes)
+├── logs/                   # Runtime and ingestion logs
+├── requirements/           # Python dependency lockfiles per component
+├── results/                # Analysis outputs, evaluation artefacts
+├── reveal-slides/          # Presentation material (assets, slide decks)
+├── scripts/                # Operational utilities (e.g. cloud backups)
+├── src/                    # Application source code
+│   ├── gtfs_pipeline/      # GTFS ingestion CLI, config, persistence glue
+│   ├── sim_bridge/         # Interfaces bridging to SUMO/FLOW simulations
+│   └── training/           # RL/optimisation experiments and notebooks
+├── Makefile                # Top-level automation and shortcuts
+├── README.md
+└── http-server.log         # Local dev HTTP server output (optional)
 ```
+
+<small>補足: `.github/`（CI 設定）や `venv/`（ローカル仮想環境）などの補助ディレクトリは状況に応じて生成されます。</small>
 
 ## Key Features
 
