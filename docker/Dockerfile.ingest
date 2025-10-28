@@ -35,6 +35,6 @@ CMD ["--feed-type", "gtfs_static", "--once"]
 
 # Usage examples:
 # Single execution (short-lived task):
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type static --once
+# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type gtfs_static --once
 # Single execution for specific feed only:
-# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type static --once
+# docker run --rm -v /host/data:/app/data tram-ingest:latest --feed-type gtfs_static --once

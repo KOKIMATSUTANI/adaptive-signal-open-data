@@ -50,7 +50,7 @@ services:
       - ../configs:/app/configs
     environment: *common-environment
     # Single execution per container instance (RT data only)
-    command: ["--feed-type", "all", "--once"]
+    command: ["--feed-type", "realtime", "--once"]
     restart: "no"  # Short-lived task
     profiles:
       - manual  # Run manually or via scheduler

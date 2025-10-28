@@ -37,10 +37,10 @@ USER appuser
 # Short-lived task execution
 # Single execution per container instance (RT data only)
 ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
-CMD ["--feed-type", "all", "--once"]
+CMD ["--feed-type", "realtime", "--once"]
 
 # Usage examples:
 # Single execution (short-lived task):
-# docker run --rm -v /host/data:/app/data tram-ingest-realtime:latest --feed-type rt --once
+# docker run --rm -v /host/data:/app/data tram-ingest-realtime:latest --feed-type realtime --once
 # Single execution for specific RT feed:
 # docker run --rm -v /host/data:/app/data tram-ingest-realtime:latest --feed-type trip_updates --once

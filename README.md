@@ -30,12 +30,21 @@ cp ~/.config/rclone/rclone.conf ./configs/rclone/
 
 ### 3. Run
 ```bash
-# Start GTFS data collection
-make run-ingest-rclone
+# Fetch GTFS static feed once (Docker container)
+make run-ingest
 
-# Or start all services
-make compose-up
+# Fetch GTFS real-time feeds once (Docker container)
+make run-ingest-realtime
+
+# Use docker compose helpers (single-run containers)
+make compose-ingest
+make compose-ingest-realtime
 ```
+
+### 4. Cross-Platform Notes
+- The Makefile is the canonical entry point for builds and one-off tasks.  
+- macOS/Linux include `make` by default. On Windows, install a POSIX shell with `make` support (e.g. WSL, Git Bash, MSYS2) before running the commands above.  
+- If you need to invoke the underlying shell scripts directly, see `scripts/`, but `make` keeps workflows consistent across laptops, servers, and CI/cloud runners.
 
 ## Directory Structure
 
@@ -65,7 +74,7 @@ adptive-signal-open-data/
 └── http-server.log         # Local dev HTTP server output (optional)
 ```
 
-<small>補足: `.github/`（CI 設定）や `venv/`（ローカル仮想環境）などの補助ディレクトリは状況に応じて生成されます。</small>
+<small>Note: Auxiliary directories such as `.github/` (CI configuration) and `venv/` (local virtual environment) are created only when needed.</small>
 
 ## Key Features
 
@@ -88,14 +97,18 @@ adptive-signal-open-data/
 
 ### Data Collection
 ```bash
-# Using rclone (recommended)
-make run-ingest-rclone
-
-# Using Google Drive API
+# GTFS static feed (one-off)
 make run-ingest
 
-# Without backup
-make run-ingest-no-backup
+# GTFS real-time feeds (one-off)
+make run-ingest-realtime
+
+# GTFS real-time feeds with raw protobuf/ZIP archives
+make run-ingest-realtime-raw
+
+# Compose helpers (one-off containers)
+make compose-ingest
+make compose-ingest-realtime
 ```
 
 ### Simulation
@@ -106,11 +119,6 @@ make run-sim
 ### Training
 ```bash
 make run-train
-```
-
-### All Services
-```bash
-make compose-up
 ```
 
 ## Configuration

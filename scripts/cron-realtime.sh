@@ -19,7 +19,7 @@ log() {
 run_rt_ingest() {
     log "Starting GTFS-RT ingestion task"
     cd "$PROJECT_DIR"
-    docker compose -f docker/docker-compose.yml run --rm gtfs-ingest-static --feed-type rt --once
+    docker compose -f docker/docker-compose.yml run --rm gtfs-ingest-realtime --feed-type realtime --once
     log "GTFS-RT ingestion task completed"
 }
 

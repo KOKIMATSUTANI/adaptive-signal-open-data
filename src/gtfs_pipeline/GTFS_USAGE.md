@@ -29,9 +29,14 @@ python -m src.gtfs_pipeline.cli list-feeds
 python -m src.gtfs_pipeline.cli ingest --feed-type all --once
 ```
 
+#### Real-Time Only (Single Pass)
+```bash
+python -m src.gtfs_pipeline.cli ingest --feed-type realtime --once
+```
+
 #### Continuous Execution (20-second intervals)
 ```bash
-python -m src.gtfs_pipeline.cli ingest --feed-type all --interval 20
+python -m src.gtfs_pipeline.cli ingest --feed-type realtime --interval 20
 ```
 
 #### Continuous Execution (60-second intervals, default)
@@ -49,6 +54,9 @@ python -m src.gtfs_pipeline.cli ingest --feed-type trip_updates --once
 
 # Vehicle Positions only
 python -m src.gtfs_pipeline.cli ingest --feed-type vehicle_positions --once
+
+# Real-time feeds (trip updates + vehicle positions)
+python -m src.gtfs_pipeline.cli ingest --feed-type realtime --once
 ```
 
 ## Configuration

@@ -306,6 +306,34 @@ class GTFSIngest:
             self.logger.error(f"Error ingesting GTFS Static data: {e}")
             return False
 
+    # Pull only the configured real-time feeds.
+    async def ingest_realtime_feeds(self, feed_types: Optional[List[str]] = None) -> Dict[str, bool]:
+        """
+        Ingest configured GTFS-RT feeds.
+
+        Args:
+            feed_types: Optional list of feed types to ingest. When omitted, all configured
+                        feed types are ingested.
+
+        Returns:
+            Dictionary mapping feed URLs to success status.
+        """
+        results: Dict[str, bool] = {}
+        selected_feed_types = set(feed_types) if feed_types else set(self.config.feeds.keys())
+
+        for feed_type, feed_urls in self.config.feeds.items():
+            if feed_type not in selected_feed_types:
+                continue
+
+            for feed_url in feed_urls:
+                success = await self.ingest_feed(feed_url, feed_type)
+                results[feed_url] = success
+
+                # Add delay between requests to be respectful
+                await asyncio.sleep(self.config.request_delay)
+
+        return results
+
     # Run one combined ingestion pass over static and RT feeds.
     async def ingest_all_feeds(self) -> Dict[str, bool]:
         """
@@ -314,22 +342,68 @@ class GTFSIngest:
         Returns:
             Dictionary mapping feed URLs to success status
         """
-        results = {}
+        results: Dict[str, bool] = {}
         
         # Ingest GTFS Static data first
         static_success = await self.ingest_gtfs_static()
         results[self.config.gtfs_static_url] = static_success
         
         # Ingest GTFS-RT feeds
-        for feed_type, feed_urls in self.config.feeds.items():
-            for feed_url in feed_urls:
-                success = await self.ingest_feed(feed_url, feed_type)
-                results[feed_url] = success
-                
-                # Add delay between requests to be respectful
-                await asyncio.sleep(self.config.request_delay)
+        realtime_results = await self.ingest_realtime_feeds()
+        results.update(realtime_results)
         
         return results
+
+    # Run continuous loop for only the real-time feeds.
+    async def continuous_realtime_ingestion(
+        self,
+        interval: int = 60,
+        feed_types: Optional[List[str]] = None,
+        include_static_on_first_cycle: bool = False,
+    ) -> None:
+        """
+        Run continuous ingestion loop for GTFS real-time feeds.
+
+        Args:
+            interval: Seconds to wait between ingestion cycles.
+            feed_types: Optional list of feed types to ingest (defaults to all configured).
+            include_static_on_first_cycle: When True, fetch GTFS static data before the first
+                                           real-time ingestion cycle.
+        """
+        selected = ", ".join(feed_types) if feed_types else "all configured real-time"
+        self.logger.info(
+            f"Starting continuous real-time ingestion for {selected} feeds with {interval}s intervals"
+        )
+
+        first_cycle = True
+        while True:
+            try:
+                cycle_results: Dict[str, bool] = {}
+
+                if include_static_on_first_cycle and first_cycle:
+                    static_success = await self.ingest_gtfs_static()
+                    cycle_results[self.config.gtfs_static_url] = static_success
+
+                realtime_results = await self.ingest_realtime_feeds(feed_types=feed_types)
+                cycle_results.update(realtime_results)
+
+                successful = sum(1 for success in cycle_results.values() if success)
+                total = len(cycle_results)
+                self.logger.info(
+                    f"Real-time ingestion cycle completed: {successful}/{total} feeds successful"
+                )
+
+                first_cycle = False
+                self.logger.info(f"Waiting {interval} seconds until next real-time cycle...")
+                await asyncio.sleep(interval)
+
+            except KeyboardInterrupt:
+                self.logger.info("Continuous real-time ingestion stopped by user")
+                break
+            except Exception as e:
+                self.logger.error(f"Error in continuous real-time ingestion cycle: {e}")
+                self.logger.info(f"Waiting {interval} seconds before retry...")
+                await asyncio.sleep(interval)
     
     # Keep ingesting on a schedule until cancelled.
     async def continuous_ingestion(self, interval: int = 60) -> None:

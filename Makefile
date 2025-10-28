@@ -48,7 +48,7 @@ run-ingest: build-ingest
 
 # Run GTFS-RT real-time data ingestion (short-lived task)
 run-ingest-realtime: build-ingest-realtime
-	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type all --once
+	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
 run-ingest-realtime-raw: build-ingest-realtime
 	docker run --rm \
@@ -57,7 +57,7 @@ run-ingest-realtime-raw: build-ingest-realtime
 		-v $(PWD)/data:/app/data \
 		-v $(PWD)/logs:/app/logs \
 		-v $(PWD)/configs:/app/configs \
-		$(INGEST_REALTIME_IMAGE) --feed-type all --once
+		$(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
 # Run backup (short-lived task)
 run-backup: build-backup
