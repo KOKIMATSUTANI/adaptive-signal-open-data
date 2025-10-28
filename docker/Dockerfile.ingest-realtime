@@ -8,11 +8,9 @@ FROM ${BASE_IMAGE}
 WORKDIR /app
 
 # Add only lightweight dependencies for ingestion (install as root user)
-USER root
-COPY requirements/ingest.txt /tmp/requirements-ingest.txt
-RUN pip install --no-cache-dir -r /tmp/requirements-ingest.txt \
+COPY --chown=${APP_UID}:${APP_GID} requirements/ingest.txt /tmp/requirements-ingest.txt
+RUN pip install --no-cache-dir --user -r /tmp/requirements-ingest.txt \
     && rm /tmp/requirements-ingest.txt
-USER appuser
 
 # timezone and flush buffer
 ENV TZ=Asia/Tokyo
@@ -33,6 +31,7 @@ VOLUME ["/app/data"]
 
 # Switch user
 USER appuser
+ENV PATH="/home/appuser/.local/bin:${PATH}"
 
 # Short-lived task execution
 # Single execution per container instance (RT data only)
