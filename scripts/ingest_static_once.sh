@@ -12,6 +12,8 @@ DATA_DIR="${DATA_DIR:-$PROJECT_DIR/data/raw}"
 CONTAINER_DATA_DIR="${CONTAINER_DATA_DIR:-/app/data/raw}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker/docker-compose.yml}"
 DOCKER_COMPOSE_CMD=()
+CLEAN_PREVIOUS=${CLEAN_PREVIOUS:-0}
+BEFORE_SNAPSHOTS=()
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
@@ -45,6 +47,11 @@ remove_via_container() {
 }
 
 cleanup_snapshots() {
+    if [ "$CLEAN_PREVIOUS" != "1" ]; then
+        log "Skipping cleanup of existing GTFS static snapshots (CLEAN_PREVIOUS!=1)"
+        return
+    fi
+
     mkdir -p "$DATA_DIR"
     mapfile -t existing < <(find "$DATA_DIR" -maxdepth 1 -type f -name "gtfs_static_*.json" -printf "%p\n" 2>/dev/null || true)
 
@@ -69,37 +76,62 @@ cleanup_snapshots() {
     fi
 }
 
+snapshot_list() {
+    find "$DATA_DIR" -maxdepth 1 -type f -name "gtfs_static_*.json" -printf "%p\n" 2>/dev/null | sort
+}
+
 ingest_static() {
     log "Starting GTFS static ingestion (single run)..."
     (
         cd "$PROJECT_DIR"
-        "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" run --rm gtfs-ingest-static
+        "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" run --build --rm gtfs-ingest-static
     )
     log "GTFS static ingestion finished."
 }
 
 verify_result() {
-    local snapshots
-    snapshots=($(find "$DATA_DIR" -maxdepth 1 -type f -name "gtfs_static_*.json"))
-    case ${#snapshots[@]} in
-        0)
-            log "WARNING: No GTFS static snapshot found after ingestion. Check container logs."
-            return 1
-            ;;
-        1)
-            log "GTFS static snapshot stored at: ${snapshots[0]}"
-            ;;
-        *)
-            log "WARNING: Multiple GTFS static snapshots detected:"
-            for file in "${snapshots[@]}"; do
-                log "  - $file"
-            done
-            return 1
-            ;;
-    esac
+    mapfile -t snapshots < <(snapshot_list)
+
+    if ((${#snapshots[@]} == 0)); then
+        log "WARNING: No GTFS static snapshot found after ingestion. Check container logs."
+        return 1
+    fi
+
+    # Track newly created files by comparing to pre-ingest list
+    declare -A before_map=()
+    for file in "${BEFORE_SNAPSHOTS[@]}"; do
+        before_map["$file"]=1
+    done
+
+    local new_snapshots=()
+    for file in "${snapshots[@]}"; do
+        if [[ -z "${before_map["$file"]:-}" ]]; then
+            new_snapshots+=("$file")
+        fi
+    done
+
+    if ((${#new_snapshots[@]} == 0)); then
+        log "WARNING: No new GTFS static snapshots detected (files may have been overwritten)."
+        return 1
+    fi
+
+    if ((${#new_snapshots[@]} == 1)); then
+        log "GTFS static snapshot stored at: ${new_snapshots[0]}"
+    else
+        log "GTFS static snapshots stored at:"
+        for file in "${new_snapshots[@]}"; do
+            log "  - $file"
+        done
+    fi
 }
 
 ensure_dependencies
+(
+    cd "$PROJECT_DIR"
+    "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" build gtfs-ingest-static >/dev/null
+)
+mkdir -p "$DATA_DIR"
 cleanup_snapshots
+mapfile -t BEFORE_SNAPSHOTS < <(snapshot_list)
 ingest_static
 verify_result

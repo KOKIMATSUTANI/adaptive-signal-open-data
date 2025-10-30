@@ -10,6 +10,8 @@ x-common-volumes: &common-volumes
   - ../data:/app/data
   - ../logs:/app/logs
   - ../configs:/app/configs
+  - ../src:/app/src
+  - ../scripts:/app/scripts
 
 services:
   # GTFS Static data ingestion (short-lived task)

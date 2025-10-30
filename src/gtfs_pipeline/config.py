@@ -26,17 +26,22 @@ class GTFSConfig:
     """Main configuration class for GTFS-RT pipeline."""
     
     # Feed URLs for different transit agencies
-    feeds: Dict[str, List[str]] = field(default_factory=lambda: {
-        "trip_updates": [
-            "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/TripUpdates.pb",
-        ],
-        "vehicle_positions": [
-            "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/VehiclePositions.pb",
-        ]
+    feeds: Dict[str, Dict[str, str]] = field(default_factory=lambda: {
+        "trip_updates": {
+            "chitetsu_tram": "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/TripUpdates.pb",
+            "chitetsu_bus": "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu/TripUpdates.pb",
+        },
+        "vehicle_positions": {
+            "chitetsu_tram": "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu_tram/VehiclePositions.pb",
+            "chitetsu_bus": "https://gtfs-rt-files.buscatch.jp/toyama/chitetsu/VehiclePositions.pb",
+        }
     })
     
-    # GTFS Static data URL
-    gtfs_static_url: str = "https://api.gtfs-data.jp/v2/organizations/chitetsu/feeds/chitetsushinaidensha/files/feed.zip?rid=current"
+    # GTFS Static data URLs (name -> URL)
+    gtfs_static_feeds: Dict[str, str] = field(default_factory=lambda: {
+        "chitetsu_tram": "https://api.gtfs-data.jp/v2/organizations/chitetsu/feeds/chitetsushinaidensha/files/feed.zip?rid=current",
+        "chitetsu_bus": "https://api.gtfs-data.jp/v2/organizations/chitetsu/feeds/chitetsubus/files/feed.zip?rid=current",
+    })
     
     # Request settings
     request_delay: float = 20.0  # seconds between requests

@@ -229,13 +229,20 @@ class GTFSIngest:
         }
 
     # Execute fetch, parse, and persistence workflow for a real-time feed.
-    async def ingest_feed(self, feed_url: str, feed_type: str) -> bool:
+    async def ingest_feed(
+        self,
+        feed_url: str,
+        feed_type: str,
+        feed_name: Optional[str] = None,
+        timestamp_override: Optional[str] = None,
+    ) -> bool:
         """
         Ingest a single GTFS-RT feed.
         
         Args:
             feed_url: URL of the GTFS-RT feed
             feed_type: Type of feed (trip_updates, vehicle_positions)
+            timestamp_override: Optional timestamp string (YYYYMMDD_HHMMSS) shared across feeds
             
         Returns:
             True if ingestion was successful, False otherwise
@@ -245,12 +252,15 @@ class GTFSIngest:
             raw_data = await self.fetch_gtfs_rt_data(feed_url)
             if not raw_data:
                 return False
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = timestamp_override or datetime.now().strftime('%Y%m%d_%H%M%S')
             
             # Parse protobuf data
             parsed_data = self.parse_gtfs_rt_data(raw_data, feed_type)
             if not parsed_data:
                 return False
+            parsed_data['feed_url'] = feed_url
+            if feed_name:
+                parsed_data['feed_name'] = feed_name
             
             # Store in database
             success = await self.db_manager.store_gtfs_rt_data(
@@ -258,12 +268,15 @@ class GTFSIngest:
                 feed_url,
                 raw_bytes=raw_data,
                 timestamp=timestamp,
+                feed_name=feed_name,
             )
             
             if success:
-                self.logger.info(f"Successfully ingested {feed_type} from {feed_url}")
+                name_suffix = f" ({feed_name})" if feed_name else ""
+                self.logger.info(f"Successfully ingested {feed_type}{name_suffix} from {feed_url}")
             else:
-                self.logger.error(f"Failed to store {feed_type} data from {feed_url}")
+                name_suffix = f" ({feed_name})" if feed_name else ""
+                self.logger.error(f"Failed to store {feed_type}{name_suffix} data from {feed_url}")
             
             return success
             
@@ -272,39 +285,47 @@ class GTFSIngest:
             return False
     
     # Handle the static GTFS bundle ingestion once per run.
-    async def ingest_gtfs_static(self) -> bool:
-        """
-        Ingest GTFS Static data.
-        
-        Returns:
-            True if ingestion was successful, False otherwise
-        """
-        try:
-            # Fetch GTFS Static data
-            fetch_result = await self.fetch_gtfs_static_data(self.config.gtfs_static_url)
-            if not fetch_result:
-                return False
-            gtfs_data, raw_zip = fetch_result
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            
-            # Store in database
-            success = await self.db_manager.store_gtfs_static_data(
-                gtfs_data,
-                self.config.gtfs_static_url,
-                raw_bytes=raw_zip,
-                timestamp=timestamp,
-            )
-            
-            if success:
-                self.logger.info(f"Successfully ingested GTFS Static data from {self.config.gtfs_static_url}")
-            else:
-                self.logger.error(f"Failed to store GTFS Static data from {self.config.gtfs_static_url}")
-            
-            return success
-            
-        except Exception as e:
-            self.logger.error(f"Error ingesting GTFS Static data: {e}")
+    async def ingest_gtfs_static(self) -> Dict[str, bool]:
+        """Ingest all configured GTFS Static feeds."""
+        results: Dict[str, bool] = {}
+
+        for feed_name, feed_url in self.config.gtfs_static_feeds.items():
+            try:
+                success = await self._ingest_single_static(feed_name, feed_url)
+            except Exception as exc:  # pragma: no cover - defensive
+                self.logger.error(f"Error ingesting GTFS Static feed '{feed_name}': {exc}")
+                success = False
+
+            results[feed_url] = success
+
+        return results
+
+    async def _ingest_single_static(self, feed_name: str, feed_url: str) -> bool:
+        """Fetch and persist a single GTFS Static feed."""
+        self.logger.info(f"Fetching GTFS Static data ({feed_name}) from: {feed_url}")
+
+        fetch_result = await self.fetch_gtfs_static_data(feed_url)
+        if not fetch_result:
+            self.logger.error(f"Failed to fetch GTFS Static data ({feed_name}) from {feed_url}")
             return False
+
+        gtfs_data, raw_zip = fetch_result
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+        success = await self.db_manager.store_gtfs_static_data(
+            gtfs_data,
+            feed_url,
+            raw_bytes=raw_zip,
+            timestamp=timestamp,
+            feed_name=feed_name,
+        )
+
+        if success:
+            self.logger.info(f"Successfully ingested GTFS Static data ({feed_name}) from {feed_url}")
+        else:
+            self.logger.error(f"Failed to store GTFS Static data ({feed_name}) from {feed_url}")
+
+        return success
 
     # Pull only the configured real-time feeds.
     async def ingest_realtime_feeds(self, feed_types: Optional[List[str]] = None) -> Dict[str, bool]:
@@ -321,16 +342,40 @@ class GTFSIngest:
         results: Dict[str, bool] = {}
         selected_feed_types = set(feed_types) if feed_types else set(self.config.feeds.keys())
 
+        tasks: List[asyncio.Task] = []
+        feed_order: List[Tuple[str, str]] = []
+        cycle_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
         for feed_type, feed_urls in self.config.feeds.items():
             if feed_type not in selected_feed_types:
                 continue
 
-            for feed_url in feed_urls:
-                success = await self.ingest_feed(feed_url, feed_type)
-                results[feed_url] = success
+            for feed_name, feed_url in feed_urls.items():
+                feed_order.append((feed_type, feed_url, feed_name))
+                tasks.append(
+                    asyncio.create_task(
+                        self.ingest_feed(
+                            feed_url,
+                            feed_type,
+                            feed_name=feed_name,
+                            timestamp_override=cycle_timestamp,
+                        )
+                    )
+                )
 
-                # Add delay between requests to be respectful
-                await asyncio.sleep(self.config.request_delay)
+        if not tasks:
+            return results
+
+        task_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for (feed_type, feed_url, feed_name), task_result in zip(feed_order, task_results):
+            if isinstance(task_result, Exception):
+                self.logger.error(
+                    f"Error ingesting {feed_type} ({feed_name}) from {feed_url}: {task_result}"
+                )
+                results[feed_url] = False
+            else:
+                results[feed_url] = bool(task_result)
 
         return results
 
@@ -345,8 +390,8 @@ class GTFSIngest:
         results: Dict[str, bool] = {}
         
         # Ingest GTFS Static data first
-        static_success = await self.ingest_gtfs_static()
-        results[self.config.gtfs_static_url] = static_success
+        static_results = await self.ingest_gtfs_static()
+        results.update(static_results)
         
         # Ingest GTFS-RT feeds
         realtime_results = await self.ingest_realtime_feeds()
@@ -378,11 +423,11 @@ class GTFSIngest:
         first_cycle = True
         while True:
             try:
+                cycle_started = time.monotonic()
                 cycle_results: Dict[str, bool] = {}
 
                 if include_static_on_first_cycle and first_cycle:
-                    static_success = await self.ingest_gtfs_static()
-                    cycle_results[self.config.gtfs_static_url] = static_success
+                    cycle_results.update(await self.ingest_gtfs_static())
 
                 realtime_results = await self.ingest_realtime_feeds(feed_types=feed_types)
                 cycle_results.update(realtime_results)
@@ -394,8 +439,11 @@ class GTFSIngest:
                 )
 
                 first_cycle = False
-                self.logger.info(f"Waiting {interval} seconds until next real-time cycle...")
-                await asyncio.sleep(interval)
+                elapsed = time.monotonic() - cycle_started
+                sleep_for = max(0.0, interval - elapsed)
+                if sleep_for > 0:
+                    self.logger.info(f"Waiting {sleep_for:.2f} seconds until next real-time cycle...")
+                    await asyncio.sleep(sleep_for)
 
             except KeyboardInterrupt:
                 self.logger.info("Continuous real-time ingestion stopped by user")

@@ -5,6 +5,8 @@ ARG BASE_IMAGE=tram-base:latest
 ARG APP_UID=1000
 ARG APP_GID=1000
 FROM ${BASE_IMAGE}
+ARG APP_UID
+ARG APP_GID
 WORKDIR /app
 
 # Add only lightweight dependencies for ingestion (install as root user)
@@ -20,13 +22,13 @@ COPY scripts/ ./scripts/
 # Fix permissions with host-matching UID/GID
 # NOTE: Do not use chmod 777 or 666.
 # Use proper ownership (chown) and safe permissions instead (chmod 755).
+USER root
 RUN chown -R ${APP_UID}:${APP_GID} /app
+USER appuser
 
 # Data volume (assumes external mount)
 VOLUME ["/app/data"]
 
-# Switch user
-USER appuser
 ENV PATH="/home/appuser/.local/bin:${PATH}"
 
 # Short-lived task execution

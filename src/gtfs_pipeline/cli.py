@@ -51,8 +51,10 @@ def ingest(ctx, feed_type: str, once: bool, interval: int):
                 if once:
                     # Run once
                     if feed_type == 'gtfs_static':
-                        success = await ingest_instance.ingest_gtfs_static()
-                        click.echo(f"GTFS Static ingestion: {'Success' if success else 'Failed'}")
+                        results = await ingest_instance.ingest_gtfs_static()
+                        successful = sum(1 for success in results.values() if success)
+                        total = len(results)
+                        click.echo(f"GTFS Static ingestion completed: {successful}/{total} feeds successful")
                     elif feed_type in ['trip_updates', 'vehicle_positions']:
                         results = await ingest_instance.ingest_realtime_feeds(feed_types=[feed_type])
                         successful = sum(1 for success in results.values() if success)
@@ -117,16 +119,17 @@ def list_feeds(ctx):
     
     # GTFS Static
     click.echo(f"\nGTFS STATIC:")
-    click.echo(f"  - {config.gtfs_static_url}")
+    for name, url in config.gtfs_static_feeds.items():
+        click.echo(f"  - {name}: {url}")
     
     # GTFS-RT Feeds
-    for feed_type, urls in config.feeds.items():
+    for feed_type, feeds in config.feeds.items():
         click.echo(f"\n{feed_type.upper()}:")
-        for url in urls:
-            click.echo(f"  - {url}")
-        
-        if not urls:
+        if not feeds:
             click.echo("  (no feeds configured)")
+            continue
+        for name, url in feeds.items():
+            click.echo(f"  - {name}: {url}")
 
 
 if __name__ == '__main__':

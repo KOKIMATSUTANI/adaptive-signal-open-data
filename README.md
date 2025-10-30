@@ -20,14 +20,20 @@ sudo apt install docker.io docker compose
 
 ### 2. Run
 ```bash
-# Fetch GTFS static feed once (cleans old snapshots first)
+# Fetch GTFS static feeds (tram + bus) once
 make run-ingest-static
 
 # Fetch GTFS real-time feeds once (Docker container)
 make run-ingest-realtime
 
+# Continuous GTFS real-time ingestion (pauses 00:00–04:59 JST)
+make run-ingest-realtime-loop
+
 # Use docker compose helpers (single-run containers)
 make compose-ingest-realtime
+
+# Compose helper for continuous ingestion
+make compose-ingest-realtime-loop REALTIME_INTERVAL=20
 ```
 
 ### 3. Cross-Platform Notes
@@ -84,7 +90,10 @@ adptive-signal-open-data/
 
 ### Data Collection
 ```bash
-# GTFS real-time feeds (one-off)
+# GTFS static feeds (tram & bus). Set CLEAN_PREVIOUS=1 to clear old snapshots.
+make run-ingest-static
+
+# GTFS real-time feeds (one-off snapshot)
 make run-ingest-realtime
 
 # GTFS real-time feeds with raw protobuf/ZIP archives
@@ -93,8 +102,11 @@ make run-ingest-realtime-raw
 # Compose helpers (one-off containers)
 make compose-ingest-realtime
 
-# GTFS static feed (one-off, manual)
-docker compose -f docker/docker-compose.yml run --rm gtfs-ingest-static
+# Continuous real-time ingestion via scheduler (skips 00:00–04:59 JST)
+make run-ingest-realtime-loop
+
+# Compose helper for manual continuous run (no quiet hours, runs until stopped)
+make compose-ingest-realtime-loop REALTIME_INTERVAL=20
 ```
 
 ### Simulation
@@ -112,6 +124,8 @@ make run-train
 ### Environment Variables
 - `GTFS_RT_SAVE_PROTO`: Set to `1` to archive raw GTFS-RT protobuf (`.pb`) alongside parsed JSON
 - `GTFS_STATIC_SAVE_ZIP`: Set to `1` to archive raw GTFS Static ZIP payloads alongside parsed JSON
+- `REALTIME_INTERVAL`: Override the loop interval (seconds) for compose-based continuous runs
+- `CLEAN_PREVIOUS`: Set to `1` when running `make run-ingest-static` to purge existing snapshots before download
 
 ### Documentation
 - `docs/REQUIREMENTS.md`: Dependencies management guide
@@ -128,6 +142,7 @@ make build-all
 ```bash
 # Application logs
 tail -f logs/ingest.log
+tail -f logs/scheduler-realtime.log
 ```
 
 ## Development
