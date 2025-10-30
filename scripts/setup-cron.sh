@@ -35,8 +35,6 @@ setup_cron() {
 * * * * * sleep 20; $CRON_SCRIPT rt-ingest
 * * * * * sleep 40; $CRON_SCRIPT rt-ingest
 
-# Backup every 5 minutes
-*/5 * * * * $CRON_SCRIPT backup
 EOF
     
     # Install new cron jobs
@@ -45,7 +43,6 @@ EOF
     
     log "Cron jobs installed successfully"
     log "GTFS-RT data collection: every 20 seconds"
-    log "Backup: every 5 minutes"
 }
 
 # Function to remove cron jobs

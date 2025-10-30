@@ -5,7 +5,6 @@ A GTFS data collection, analysis, and optimization system designed to reduce tra
 ## Overview
 
 - **GTFS Data Collection**: Real-time data acquisition at 20-second intervals
-- **Auto Backup**: Automatic upload to Google Drive
 - **Simulation**: Traffic simulation using SUMO/FLOW
 - **Optimization**: Delay reduction through reinforcement learning and mathematical optimization
 
@@ -17,31 +16,21 @@ A GTFS data collection, analysis, and optimization system designed to reduce tra
 sudo apt update
 sudo apt install docker.io docker compose
 
-# rclone (for Google Drive integration)
-sudo apt install rclone
 ```
 
-### 2. Google Drive Setup (Optional)
+### 2. Run
 ```bash
-# rclone configuration
-rclone config
-cp ~/.config/rclone/rclone.conf ./configs/rclone/
-```
-
-### 3. Run
-```bash
-# Fetch GTFS static feed once (Docker container)
-make run-ingest
+# Fetch GTFS static feed once (cleans old snapshots first)
+make run-ingest-static
 
 # Fetch GTFS real-time feeds once (Docker container)
 make run-ingest-realtime
 
 # Use docker compose helpers (single-run containers)
-make compose-ingest
 make compose-ingest-realtime
 ```
 
-### 4. Cross-Platform Notes
+### 3. Cross-Platform Notes
 - The Makefile is the canonical entry point for builds and one-off tasks.  
 - macOS/Linux include `make` by default. On Windows, install a POSIX shell with `make` support (e.g. WSL, Git Bash, MSYS2) before running the commands above.  
 - If you need to invoke the underlying shell scripts directly, see `scripts/`, but `make` keeps workflows consistent across laptops, servers, and CI/cloud runners.
@@ -50,9 +39,7 @@ make compose-ingest-realtime
 
 ```
 adptive-signal-open-data/
-├── configs/                # Credentials & sync configuration templates
-│   ├── google_drive/       # Google Drive API OAuth/credential files
-│   └── rclone/             # rclone remote definitions and tokens
+├── configs/                # Configuration templates (ingestion, simulation)
 ├── data/                   # Local storage layers for collected feeds
 │   ├── bronze/
 │   ├── raw_GCP/
@@ -64,7 +51,7 @@ adptive-signal-open-data/
 ├── requirements/           # Python dependency lockfiles per component
 ├── results/                # Analysis outputs, evaluation artefacts
 ├── reveal-slides/          # Presentation material (assets, slide decks)
-├── scripts/                # Operational utilities (e.g. cloud backups)
+├── scripts/                # Operational utilities (schedulers, helpers)
 ├── src/                    # Application source code
 │   ├── gtfs_pipeline/      # GTFS ingestion CLI, config, persistence glue
 │   ├── sim_bridge/         # Interfaces bridging to SUMO/FLOW simulations
@@ -79,9 +66,9 @@ adptive-signal-open-data/
 ## Key Features
 
 ### GTFS Data Collection
-- **Interval**: 20 seconds
-- **Data**: GTFS Static, Trip Updates, Vehicle Positions
-- **Storage**: Local + Google Drive auto backup
+- **Interval**: 20 seconds (real-time feeds)
+- **Data**: GTFS Static (manual trigger), Trip Updates, Vehicle Positions
+- **Storage**: Local filesystem
 
 ### Simulation
 - **Engine**: SUMO/FLOW
@@ -97,9 +84,6 @@ adptive-signal-open-data/
 
 ### Data Collection
 ```bash
-# GTFS static feed (one-off)
-make run-ingest
-
 # GTFS real-time feeds (one-off)
 make run-ingest-realtime
 
@@ -107,8 +91,10 @@ make run-ingest-realtime
 make run-ingest-realtime-raw
 
 # Compose helpers (one-off containers)
-make compose-ingest
 make compose-ingest-realtime
+
+# GTFS static feed (one-off, manual)
+docker compose -f docker/docker-compose.yml run --rm gtfs-ingest-static
 ```
 
 ### Simulation
@@ -124,19 +110,10 @@ make run-train
 ## Configuration
 
 ### Environment Variables
-- `RCLONE_ENABLED`: rclone auto backup (recommended)
-- `GOOGLE_DRIVE_ENABLED`: Google Drive API auto backup (alternative)
-- `BACKUP_INTERVAL`: Backup interval (seconds)
 - `GTFS_RT_SAVE_PROTO`: Set to `1` to archive raw GTFS-RT protobuf (`.pb`) alongside parsed JSON
 - `GTFS_STATIC_SAVE_ZIP`: Set to `1` to archive raw GTFS Static ZIP payloads alongside parsed JSON
 
-### Configuration Files
-- `configs/rclone/rclone.conf`: rclone configuration (recommended)
-- `configs/google_drive/`: Google Drive API configuration (alternative)
-
 ### Documentation
-- `docs/RCLONE_SETUP.md`: Complete rclone setup guide
-- `docs/GOOGLE_DRIVE_API.md`: Google Drive API setup guide
 - `docs/REQUIREMENTS.md`: Dependencies management guide
 
 ## Troubleshooting
@@ -147,17 +124,10 @@ make clean
 make build-all
 ```
 
-### Authentication Errors
-- Check rclone configuration: `rclone lsd gdrive:`
-- Check Google Drive API configuration: `docs/GOOGLE_DRIVE.md`
-
 ### Log Checking
 ```bash
 # Application logs
 tail -f logs/ingest.log
-
-# Backup logs
-tail -f logs/backup.log
 ```
 
 ## Development
@@ -194,4 +164,3 @@ Pull requests and issue reports are welcome.
 
 - [GTFS Specification](https://developers.google.com/transit/gtfs)
 - [SUMO Official Documentation](https://sumo.dlr.de/docs/)
-- [rclone Official Documentation](https://rclone.org/)

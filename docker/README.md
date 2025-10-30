@@ -20,9 +20,9 @@ This project uses **separated Docker images** to optimize dependencies for each 
 make build-all
 ```
 
-### 2. Run Data Collection
+### 2. Run Real-time Collection
 ```bash
-make run-ingest
+make run-ingest-realtime
 ```
 
 ### 3. Run Simulation
@@ -41,7 +41,7 @@ make run-train
 docker/
 ├── docker-compose.yml    # Orchestration for all services
 ├── Dockerfile.base       # Base image (common dependencies)
-├── Dockerfile.ingest     # Image for GTFS data collection
+├── Dockerfile.ingest     # Image for GTFS static data collection
 ├── Dockerfile.sim        # Image for simulation
 ├── Dockerfile.train      # Image for training
 └── README.md            # This file
@@ -60,9 +60,6 @@ docker compose -f docker/docker-compose.yml up --build
 
 ### 2. Start Individual Services
 ```bash
-# GTFS data collection only
-make compose-ingest
-
 # Simulation only
 make compose-sim
 
@@ -75,9 +72,6 @@ make compose-train
 # Base image
 make build-base
 
-# GTFS data collection image
-make build-ingest
-
 # Simulation image
 make build-sim
 
@@ -87,11 +81,15 @@ make build-train
 
 ## Service Details
 
-### gtfs-ingest
-- **Purpose**: GTFS data collection and storage
-- **Execution Interval**: 20 seconds
-- **Backup**: Google Drive auto backup (5-minute intervals)
-- **Restart**: Auto restart (unless-stopped)
+### gtfs-ingest-static
+- **Purpose**: One-off GTFS static data downloads
+- **Execution**: Manual trigger (`docker compose run --rm gtfs-ingest-static`)
+- **Restart**: None
+
+### gtfs-ingest-realtime
+- **Purpose**: GTFS-RT (trip updates & vehicle positions) collection
+- **Execution Interval**: 20 seconds (when scheduled externally)
+- **Restart**: None (run-once container)
 
 ### simulation
 - **Purpose**: SUMO/FLOW simulation execution
@@ -111,17 +109,10 @@ make build-train
 - `../results` → `/app/results` - Execution results
 - `../models` → `/app/models` - Trained models
 
-### Configuration Directories
-- `../configs/google_drive` → `/app/configs/google_drive` - Google Drive API authentication (alternative to rclone)
-
 ## Environment Variables
 
 ### Common
 - `PYTHONPATH=/app/src` - Python path configuration
-
-### gtfs-ingest
-- `GOOGLE_DRIVE_ENABLED=true` - Google Drive API auto backup enabled (alternative to rclone)
-- `BACKUP_INTERVAL=300` - Backup interval (seconds)
 
 ### simulation
 - `SUMO_HOME=/opt/sumo` - SUMO installation path

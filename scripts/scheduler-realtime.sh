@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 RT_INTERVAL=${RT_INTERVAL:-20}  # seconds
-# BACKUP_INTERVAL=${BACKUP_INTERVAL:-60}  # seconds (1 minute for real-time data backup)
+# Legacy backup scheduling removed; this script only runs GTFS-RT ingestion.
 export TZ=Asia/Tokyo
 
 # Log function
@@ -25,14 +25,6 @@ run_rt_ingest() {
     docker compose -f docker/docker-compose.yml run --rm gtfs-ingest-realtime
     log "GTFS-RT ingestion task completed"
 }
-
-# # Function to run backup
-# run_backup() {
-#     log "Starting backup task"
-#     cd "$PROJECT_DIR"
-#     docker compose -f docker/docker-compose.yml run --rm backup
-#     log "Backup task completed"
-# }
 
 # # Function to cleanup on exit
 # cleanup() {
@@ -49,7 +41,7 @@ main() {
     out_dir="$PROJECT_DIR/data/raw/$(date +%Y/%m/%d)"
     mkdir -p "$out_dir"
     
-    # log "Starting real-time scheduler with intervals: rt=${RT_INTERVAL}s, backup=${BACKUP_INTERVAL}s"
+    # log "Starting real-time scheduler with interval: rt=${RT_INTERVAL}s"
     log "Starting real-time scheduler with interval: rt=${RT_INTERVAL}s"
     log "Current time: $(date '+%Y-%m-%d %H:%M:%S')"
     
@@ -70,27 +62,18 @@ main() {
     ) &
     RT_PID=$!
     
-    # (
-    #     while true; do
-    #         run_backup
-    #         sleep "$BACKUP_INTERVAL"
-    #     done
-    # ) &
-    # BACKUP_PID=$!
-    
-    # log "Real-time scheduler started with PIDs: rt=$RT_PID, backup=$BACKUP_PID"
+    # log "Real-time scheduler started with PID: rt=$RT_PID"
     log "Real-time scheduler started with PIDs: rt=$RT_PID"
     
     # Wait for processes
     wait $RT_PID
-    # wait $BACKUP_PID
+    # wait for additional background tasks if reintroduced
 }
 
 # Check if running in single execution mode
 if [ "${1:-}" = "--once" ]; then
     log "Single execution mode"
     run_rt_ingest
-    # run_backup
     log "Single execution completed"
     exit 0
 fi

@@ -79,27 +79,18 @@ docker-compose.yml
 # 3-2. 20 秒間隔の取得スクリプト
 - `fetch_gtfs.sh` が `sleep 20` で高頻度ポーリング
 ```pseudo
-scripts/scheduler.sh
-  INGEST_INTERVAL = ${INGEST_INTERVAL:-20}
-  BACKUP_INTERVAL = ${BACKUP_INTERVAL:-300}
-  log(msg) -> append to logs/scheduler.log with timestamp
+scripts/scheduler-realtime.sh
+  RT_INTERVAL = ${RT_INTERVAL:-20}
+  log(msg) -> append to logs/scheduler-realtime.log with timestamp
 
-  function run_ingest() {
-    docker compose run --rm gtfs-ingest
+  function run_rt_ingest() {
+    docker compose run --rm gtfs-ingest-realtime
   }
-
-  function run_backup() {
-    docker compose run --rm backup
-  }
-
-  trap cleanup on SIGTERM,SIGINT
 
   loop in background {
-    run_ingest(); sleep INGEST_INTERVAL
-  }
-
-  loop in parallel {
-    run_backup(); sleep BACKUP_INTERVAL
+    if current_hour < 5:
+      sleep RT_INTERVAL; continue
+    run_rt_ingest(); sleep RT_INTERVAL
   }
 ```
 

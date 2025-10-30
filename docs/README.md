@@ -6,9 +6,6 @@ This directory contains detailed documentation for the project.
 
 | File | Description |
 |------|-------------|
-| `GOOGLE_DRIVE.md` | Google Drive integration setup and usage (rclone + API) |
-| `GOOGLE_DRIVE_API.md` | Google Drive API configuration (alternative to rclone) |
-| `RCLONE_SETUP.md` | rclone configuration and usage (recommended) |
 | `REQUIREMENTS.md` | Python dependencies management |
 | `README.md` | This file |
 

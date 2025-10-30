@@ -6,7 +6,6 @@
 BASE_IMAGE = tram-base:latest
 INGEST_IMAGE = tram-ingest:latest
 INGEST_REALTIME_IMAGE = tram-ingest-realtime:latest
-BACKUP_IMAGE = tram-backup:latest
 SIM_IMAGE = tram-sim:latest
 TRAIN_IMAGE = tram-train:latest
 
@@ -14,10 +13,10 @@ TRAIN_IMAGE = tram-train:latest
 COMPOSE_FILE = docker/docker-compose.yml
 
 # Build targets
-.PHONY: build-base build-ingest build-ingest-realtime build-backup build-sim build-train build-all
-.PHONY: run-ingest run-ingest-realtime run-backup run-sim run-train
-.PHONY: compose-ingest compose-ingest-realtime compose-ingest-realtime-raw compose-backup compose-sim compose-train
-.PHONY: scheduler scheduler-once clean help
+.PHONY: build-base build-ingest build-ingest-realtime build-sim build-train build-all
+.PHONY: run-ingest-static run-ingest-realtime run-sim run-train
+.PHONY: compose-ingest-realtime compose-ingest-realtime-raw compose-sim compose-train
+.PHONY: clean help
 
 # Build base image (heavy dependencies once)
 build-base:
@@ -30,9 +29,6 @@ build-ingest: build-base
 build-ingest-realtime: build-base
 	docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.ingest-realtime -t $(INGEST_REALTIME_IMAGE) .
 
-build-backup: build-base
-	docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.backup -t $(BACKUP_IMAGE) .
-
 build-sim: build-base
 	docker build -f docker/Dockerfile.sim -t $(SIM_IMAGE) .
 
@@ -40,11 +36,11 @@ build-train: build-base
 	docker build -f docker/Dockerfile.train -t $(TRAIN_IMAGE) .
 
 # Build all images
-build-all: build-ingest build-ingest-realtime build-backup build-sim build-train
+build-all: build-ingest build-ingest-realtime build-sim build-train
 
-# Run GTFS Static data ingestion (short-lived task)
-run-ingest: build-ingest
-	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_IMAGE) --feed-type gtfs_static --once
+# Run GTFS static data ingestion once (cleans previous snapshots)
+run-ingest-static:
+	./scripts/ingest_static_once.sh
 
 # Run GTFS-RT real-time data ingestion (short-lived task)
 run-ingest-realtime: build-ingest-realtime
@@ -59,10 +55,6 @@ run-ingest-realtime-raw: build-ingest-realtime
 		-v $(PWD)/configs:/app/configs \
 		$(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
-# Run backup (short-lived task)
-run-backup: build-backup
-	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs -v $(HOME)/.config/rclone:/root/.config/rclone:ro -v $(HOME)/.config/rclone:/home/appuser/.config/rclone:ro $(BACKUP_IMAGE) --once
-
 # Run simulation
 run-sim: build-sim
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/results:/app/results $(SIM_IMAGE)
@@ -72,30 +64,17 @@ run-train: build-train
 	docker run --rm -v $(PWD)/data:/app/data -v $(PWD)/models:/app/models -v $(PWD)/results:/app/results $(TRAIN_IMAGE)
 
 # Run with Docker Compose (short-lived tasks)
-compose-ingest:
-	docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-static
-
 compose-ingest-realtime:
 	docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
 compose-ingest-realtime-raw:
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 docker compose -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
-compose-backup:
-	docker compose -f $(COMPOSE_FILE) run --rm backup
-
 compose-sim:
 	docker compose -f $(COMPOSE_FILE) run --rm simulation
 
 compose-train:
 	docker compose -f $(COMPOSE_FILE) run --rm training
-
-# Scheduler for automated execution
-scheduler:
-	./scripts/scheduler.sh
-
-scheduler-once:
-	./scripts/scheduler.sh --once
 
 # Real-time scheduler (short-lived tasks)
 scheduler-realtime:
@@ -116,7 +95,7 @@ cron-show:
 
 # Cleanup
 clean:
-	docker rmi $(BASE_IMAGE) $(INGEST_IMAGE) $(INGEST_REALTIME_IMAGE) $(BACKUP_IMAGE) $(SIM_IMAGE) $(TRAIN_IMAGE) 2>/dev/null || true
+	docker rmi $(BASE_IMAGE) $(INGEST_IMAGE) $(INGEST_REALTIME_IMAGE) $(SIM_IMAGE) $(TRAIN_IMAGE) 2>/dev/null || true
 	docker system prune -f
 
 # Help
@@ -125,25 +104,19 @@ help:
 	@echo "  build-base   - Build base image (heavy dependencies)"
 	@echo "  build-ingest - Build GTFS Static ingestion image (short-lived task)"
 	@echo "  build-ingest-realtime - Build GTFS-RT real-time ingestion image (continuous)"
-	@echo "  build-backup - Build backup image (short-lived task)"
 	@echo "  build-sim    - Build simulation image"
 	@echo "  build-train  - Build training image"
 	@echo "  build-all    - Build all images"
-	@echo "  run-ingest   - Run GTFS Static data ingestion (single execution)"
+	@echo "  run-ingest-static - Run GTFS static ingestion once (ensures a single snapshot)"
 	@echo "  run-ingest-realtime - Run GTFS-RT real-time data ingestion (single execution)"
 	@echo "  run-ingest-realtime-raw - Run GTFS-RT ingestion saving raw protobuf/ZIP artifacts"
-	@echo "  run-backup   - Run backup (single execution)"
 	@echo "  run-sim      - Run simulation"
 	@echo "  run-train    - Run training"
-	@echo "  compose-ingest - Run GTFS Static ingestion with docker compose"
 	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with docker compose (single execution)"
 	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
-	@echo "  compose-backup - Run backup with docker compose"
 	@echo "  compose-sim  - Run simulation with docker compose"
 	@echo "  compose-train - Run training with docker compose"
-	@echo "  scheduler    - Run automated scheduler (static ingest + backup)"
-	@echo "  scheduler-once - Run scheduler once (single execution)"
-	@echo "  scheduler-realtime - Run real-time scheduler (RT data every 20s + backup)"
+	@echo "  scheduler-realtime - Run real-time scheduler (RT data every 20s)"
 	@echo "  scheduler-realtime-once - Run real-time scheduler once"
 	@echo "  cron-setup   - Setup system cron for real-time data collection"
 	@echo "  cron-remove  - Remove system cron jobs"

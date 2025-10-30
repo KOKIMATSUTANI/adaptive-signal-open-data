@@ -23,24 +23,13 @@ run_rt_ingest() {
     log "GTFS-RT ingestion task completed"
 }
 
-# Function to run backup
-run_backup() {
-    log "Starting backup task"
-    cd "$PROJECT_DIR"
-    docker compose -f docker/docker-compose.yml run --rm backup
-    log "Backup task completed"
-}
-
 # Main execution
 case "$1" in
     "rt-ingest")
         run_rt_ingest
         ;;
-    "backup")
-        run_backup
-        ;;
     *)
-        echo "Usage: $0 {rt-ingest|backup}"
+        echo "Usage: $0 {rt-ingest}"
         exit 1
         ;;
 esac

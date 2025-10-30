@@ -4,18 +4,12 @@
 # Common environment variables
 x-common-environment: &common-environment
   PYTHONPATH: /app/src
-  RCLONE_ENABLED: "false"
-  GOOGLE_DRIVE_ENABLED: "false"
 
 # Common volumes
 x-common-volumes: &common-volumes
   - ../data:/app/data
   - ../logs:/app/logs
   - ../configs:/app/configs
-
-# Rclone config volume
-x-rclone-volume: &rclone-volume
-  - ~/.config/rclone:/home/appuser/.config/rclone:ro
 
 services:
   # GTFS Static data ingestion (short-lived task)
@@ -54,29 +48,6 @@ services:
     restart: "no"  # Short-lived task
     profiles:
       - manual  # Run manually or via scheduler
-
-  # # Backup job (short-lived task)
-  # backup:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.backup
-  #     args:
-  #       BASE_IMAGE: tram-base:latest
-  #       APP_UID: 1000
-  #       APP_GID: 1000
-  #   volumes:
-  #     - ../data:/app/data
-  #     - ../logs:/app/logs
-  #     - ../configs:/app/configs
-  #     - ~/.config/rclone:/home/appuser/.config/rclone:ro
-  #   environment:
-  #     <<: *common-environment
-  #     BACKUP_INTERVAL: "60"  # Backup every 1 minute for real-time data
-  #   # Single execution per container instance
-  #   command: ["--once"]
-  #   restart: "no"  # Short-lived task
-  #   profiles:
-  #     - manual  # Run manually or via scheduler
 
   # Simulation execution
   simulation:
