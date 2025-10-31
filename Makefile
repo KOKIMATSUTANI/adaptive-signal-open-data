@@ -11,7 +11,7 @@ TRAIN_IMAGE = tram-train:latest
 REALTIME_INTERVAL ?= 20
 
 # Container runtime configuration (override with CONTAINER_RUNTIME=podman etc.)
-CONTAINER_RUNTIME ?= docker
+CONTAINER_RUNTIME ?= podman
 COMPOSE_CMD ?= $(CONTAINER_RUNTIME) compose
 
 # Docker Compose configuration
@@ -25,20 +25,20 @@ COMPOSE_FILE = docker/docker-compose.yml
 
 # Build base image (heavy dependencies once)
 build-base:
-	docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.base -t $(BASE_IMAGE) .
+	$(CONTAINER_RUNTIME) build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.base -t $(BASE_IMAGE) .
 
 # Build job-specific images (lightweight & fast)
 build-ingest: build-base
-	docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.ingest -t $(INGEST_IMAGE) .
+	$(CONTAINER_RUNTIME) build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.ingest -t $(INGEST_IMAGE) .
 
 build-ingest-realtime: build-base
-	docker build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.ingest-realtime -t $(INGEST_REALTIME_IMAGE) .
+	$(CONTAINER_RUNTIME) build --build-arg APP_UID=1000 --build-arg APP_GID=1000 -f docker/Dockerfile.ingest-realtime -t $(INGEST_REALTIME_IMAGE) .
 
 build-sim: build-base
-	docker build -f docker/Dockerfile.sim -t $(SIM_IMAGE) .
+	$(CONTAINER_RUNTIME) build -f docker/Dockerfile.sim -t $(SIM_IMAGE) .
 
 build-train: build-base
-	docker build -f docker/Dockerfile.train -t $(TRAIN_IMAGE) .
+	$(CONTAINER_RUNTIME) build -f docker/Dockerfile.train -t $(TRAIN_IMAGE) .
 
 # Build all images
 build-all: build-ingest build-ingest-realtime build-sim build-train
@@ -106,8 +106,8 @@ cron-show:
 
 # Cleanup
 clean:
-	docker rmi $(BASE_IMAGE) $(INGEST_IMAGE) $(INGEST_REALTIME_IMAGE) $(SIM_IMAGE) $(TRAIN_IMAGE) 2>/dev/null || true
-	docker system prune -f
+	$(CONTAINER_RUNTIME) rmi $(BASE_IMAGE) $(INGEST_IMAGE) $(INGEST_REALTIME_IMAGE) $(SIM_IMAGE) $(TRAIN_IMAGE) 2>/dev/null || true
+	$(CONTAINER_RUNTIME) system prune -f
 
 # Help
 help:

@@ -26,31 +26,31 @@ ensure_dependencies() {
         # shellcheck disable=SC2206
         COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
     else
-        if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-            COMPOSE_CMD_ARR=(docker compose)
-            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
-        elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+        if command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
             COMPOSE_CMD_ARR=(podman compose)
             [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
         elif command -v podman-compose >/dev/null 2>&1; then
             COMPOSE_CMD_ARR=(podman-compose)
             [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
+        elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD_ARR=(docker compose)
+            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
         elif command -v docker-compose >/dev/null 2>&1; then
             COMPOSE_CMD_ARR=(docker-compose)
             [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
         else
-            log "ERROR: No compose implementation found (docker compose, podman compose, or podman-compose)."
+            log "ERROR: No compose implementation found (podman compose, podman-compose, docker compose, or docker-compose)."
             exit 1
         fi
     fi
 
     if [ -z "$CONTAINER_RUNTIME" ]; then
-        if command -v docker >/dev/null 2>&1; then
-            CONTAINER_RUNTIME="docker"
-        elif command -v podman >/dev/null 2>&1; then
+        if command -v podman >/dev/null 2>&1; then
             CONTAINER_RUNTIME="podman"
+        elif command -v docker >/dev/null 2>&1; then
+            CONTAINER_RUNTIME="docker"
         else
-            log "ERROR: No container runtime found (docker or podman)."
+            log "ERROR: No container runtime found (podman or docker)."
             exit 1
         fi
     fi

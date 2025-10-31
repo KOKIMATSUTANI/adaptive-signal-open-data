@@ -19,12 +19,12 @@ COMPOSE_CMD_ARR=()
 
 resolve_container_runtime() {
     if [ -z "$CONTAINER_RUNTIME" ]; then
-        if command -v docker >/dev/null 2>&1; then
-            CONTAINER_RUNTIME="docker"
-        elif command -v podman >/dev/null 2>&1; then
+        if command -v podman >/dev/null 2>&1; then
             CONTAINER_RUNTIME="podman"
+        elif command -v docker >/dev/null 2>&1; then
+            CONTAINER_RUNTIME="docker"
         else
-            echo "[ERROR] No container runtime found (docker or podman)." >&2
+            echo "[ERROR] No container runtime found (podman or docker)." >&2
             exit 1
         fi
     fi
@@ -32,12 +32,6 @@ resolve_container_runtime() {
     if [ -n "$COMPOSE_CMD_ENV" ]; then
         # shellcheck disable=SC2206
         COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
-        return
-    fi
-
-    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-        COMPOSE_CMD_ARR=(docker compose)
-        [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
         return
     fi
 
@@ -53,13 +47,19 @@ resolve_container_runtime() {
         return
     fi
 
+    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD_ARR=(docker compose)
+        [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
+        return
+    fi
+
     if command -v docker-compose >/dev/null 2>&1; then
         COMPOSE_CMD_ARR=(docker-compose)
         [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
         return
     fi
 
-    echo "[ERROR] No compose implementation found (docker compose, podman compose, podman-compose, docker-compose)." >&2
+    echo "[ERROR] No compose implementation found (podman compose, podman-compose, docker compose, docker-compose)." >&2
     exit 1
 }
 
