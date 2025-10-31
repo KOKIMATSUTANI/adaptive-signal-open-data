@@ -12,10 +12,13 @@ A GTFS data collection, analysis, and optimization system designed to reduce tra
 
 ### 1. Install Dependencies
 ```bash
-# Docker & Docker Compose
 sudo apt update
-sudo apt install docker.io docker compose
 
+# Docker (optional if you prefer Podman)
+sudo apt install docker.io docker-compose-plugin -y
+
+# Podman (optional alternative runtime)
+sudo apt install podman podman-compose -y
 ```
 
 ### 2. Run
@@ -23,17 +26,21 @@ sudo apt install docker.io docker compose
 # Fetch GTFS static feeds (tram + bus) once
 make run-ingest-static
 
-# Fetch GTFS real-time feeds once (Docker container)
+# Fetch GTFS real-time feeds once (containerized)
 make run-ingest-realtime
 
 # Continuous GTFS real-time ingestion (pauses 00:00–04:59 JST)
 make run-ingest-realtime-loop
 
-# Use docker compose helpers (single-run containers)
+# Use compose helpers (single-run containers)
 make compose-ingest-realtime
 
 # Compose helper for continuous ingestion
 make compose-ingest-realtime-loop REALTIME_INTERVAL=20
+
+# Example using Podman instead of Docker
+CONTAINER_RUNTIME=podman COMPOSE_CMD="podman compose" make run-ingest-static
+> If your Podman installation uses `podman-compose`, set `COMPOSE_CMD="podman-compose"` instead.
 ```
 
 ### 3. Cross-Platform Notes
@@ -108,6 +115,7 @@ make run-ingest-realtime-loop
 # Compose helper for manual continuous run (no quiet hours, runs until stopped)
 make compose-ingest-realtime-loop REALTIME_INTERVAL=20
 ```
+> To run with Podman instead of Docker, set `CONTAINER_RUNTIME=podman` and `COMPOSE_CMD="podman compose"` (or `podman-compose`) before invoking `make`.
 
 ### Simulation
 ```bash
@@ -126,6 +134,8 @@ make run-train
 - `GTFS_STATIC_SAVE_ZIP`: Set to `1` to archive raw GTFS Static ZIP payloads alongside parsed JSON
 - `REALTIME_INTERVAL`: Override the loop interval (seconds) for compose-based continuous runs
 - `CLEAN_PREVIOUS`: Set to `1` when running `make run-ingest-static` to purge existing snapshots before download
+- `CONTAINER_RUNTIME`: Override container runtime (`docker`, `podman`, etc.). Defaults to `docker`.
+- `COMPOSE_CMD`: Explicit compose command (e.g. `podman compose` or `podman-compose`). Defaults to `${CONTAINER_RUNTIME} compose`.
 
 ### Documentation
 - `docs/REQUIREMENTS.md`: Dependencies management guide

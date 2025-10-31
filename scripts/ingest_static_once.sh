@@ -11,7 +11,9 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 DATA_DIR="${DATA_DIR:-$PROJECT_DIR/data/raw}"
 CONTAINER_DATA_DIR="${CONTAINER_DATA_DIR:-/app/data/raw}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker/docker-compose.yml}"
-DOCKER_COMPOSE_CMD=()
+CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-}"
+COMPOSE_CMD_ENV="${COMPOSE_CMD:-}"
+COMPOSE_CMD_ARR=()
 CLEAN_PREVIOUS=${CLEAN_PREVIOUS:-0}
 BEFORE_SNAPSHOTS=()
 
@@ -20,18 +22,37 @@ log() {
 }
 
 ensure_dependencies() {
-    if ! command -v docker >/dev/null 2>&1; then
-        log "ERROR: docker command not found. Install Docker before running this script."
-        exit 1
+    if [ -n "$COMPOSE_CMD_ENV" ]; then
+        # shellcheck disable=SC2206
+        COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
+    else
+        if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD_ARR=(docker compose)
+            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
+        elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+            COMPOSE_CMD_ARR=(podman compose)
+            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
+        elif command -v podman-compose >/dev/null 2>&1; then
+            COMPOSE_CMD_ARR=(podman-compose)
+            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
+        elif command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE_CMD_ARR=(docker-compose)
+            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
+        else
+            log "ERROR: No compose implementation found (docker compose, podman compose, or podman-compose)."
+            exit 1
+        fi
     fi
 
-    if docker compose version >/dev/null 2>&1; then
-        DOCKER_COMPOSE_CMD=(docker compose)
-    elif command -v docker-compose >/dev/null 2>&1; then
-        DOCKER_COMPOSE_CMD=(docker-compose)
-    else
-        log "ERROR: docker compose plugin (or docker-compose) is not available."
-        exit 1
+    if [ -z "$CONTAINER_RUNTIME" ]; then
+        if command -v docker >/dev/null 2>&1; then
+            CONTAINER_RUNTIME="docker"
+        elif command -v podman >/dev/null 2>&1; then
+            CONTAINER_RUNTIME="podman"
+        else
+            log "ERROR: No container runtime found (docker or podman)."
+            exit 1
+        fi
     fi
 }
 
@@ -39,7 +60,7 @@ remove_via_container() {
     log "Attempting container-based cleanup for remaining snapshots..."
     if ! (
         cd "$PROJECT_DIR"
-        "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" run --rm --user 0:0 \
+        "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm --user 0:0 \
             --entrypoint sh gtfs-ingest-static -c "set -e; rm -f ${CONTAINER_DATA_DIR}/gtfs_static_*.json"
     ); then
         log "WARNING: Container-based cleanup failed. Manual removal may be required."
@@ -84,7 +105,7 @@ ingest_static() {
     log "Starting GTFS static ingestion (single run)..."
     (
         cd "$PROJECT_DIR"
-        "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" run --build --rm gtfs-ingest-static
+        "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm gtfs-ingest-static
     )
     log "GTFS static ingestion finished."
 }
@@ -128,7 +149,7 @@ verify_result() {
 ensure_dependencies
 (
     cd "$PROJECT_DIR"
-    "${DOCKER_COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" build gtfs-ingest-static >/dev/null
+    "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" build gtfs-ingest-static >/dev/null
 )
 mkdir -p "$DATA_DIR"
 cleanup_snapshots
