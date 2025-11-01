@@ -81,11 +81,6 @@ latex_files/build/
 # --- Jupyter / experiments ---
 *.ipynb_checkpoints
 notebooks/.ipynb_checkpoints/
-configs/rclone/rclone.conf
-.config/rclone/rclone.conf
-*.conf
-.config/rclone/rclone.conf
-*.conf
 
 .envrc
 

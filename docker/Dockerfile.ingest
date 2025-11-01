@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir --user -r /tmp/requirements-ingest.txt \
 
 # Copy only necessary code for ingestion
 COPY src/gtfs_pipeline/ ./src/gtfs_pipeline/
-COPY configs/ ./configs/
 COPY scripts/ ./scripts/
 
 # Fix permissions with host-matching UID/GID
