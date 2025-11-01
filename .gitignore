@@ -13,9 +13,12 @@ venv/
 env/
 
 # --- Project artifacts ---
-/data/
-/results/
-/logs/
+/data/**
+!/data/.gitkeep
+/results/**
+!/results/.gitkeep
+/logs/**
+!/logs/.gitkeep
 /checkpoints/
 /artifacts/
 /tmp/
