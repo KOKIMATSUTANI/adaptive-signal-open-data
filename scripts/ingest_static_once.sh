@@ -16,34 +16,19 @@ COMPOSE_CMD_ENV="${COMPOSE_CMD:-}"
 COMPOSE_CMD_ARR=()
 CLEAN_PREVIOUS=${CLEAN_PREVIOUS:-0}
 BEFORE_SNAPSHOTS=()
+INGEST_STATIC_IMAGE="${INGEST_STATIC_IMAGE:-tram-ingest:latest}"
+PREFER_PODMAN_RUN=${PREFER_PODMAN_RUN:-1}
+# Export PREFER_PODMAN_RUN=0 to force compose-based execution even with Podman.
+PODMAN_VOLUME_SUFFIX=""
+PODMAN_RUN_FLAGS=()
+APP_UID="${APP_UID:-1000}"
+APP_GID="${APP_GID:-1000}"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
 ensure_dependencies() {
-    if [ -n "$COMPOSE_CMD_ENV" ]; then
-        # shellcheck disable=SC2206
-        COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
-    else
-        if command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
-            COMPOSE_CMD_ARR=(podman compose)
-            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
-        elif command -v podman-compose >/dev/null 2>&1; then
-            COMPOSE_CMD_ARR=(podman-compose)
-            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="podman"
-        elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-            COMPOSE_CMD_ARR=(docker compose)
-            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
-        elif command -v docker-compose >/dev/null 2>&1; then
-            COMPOSE_CMD_ARR=(docker-compose)
-            [ -z "$CONTAINER_RUNTIME" ] && CONTAINER_RUNTIME="docker"
-        else
-            log "ERROR: No compose implementation found (podman compose, podman-compose, docker compose, or docker-compose)."
-            exit 1
-        fi
-    fi
-
     if [ -z "$CONTAINER_RUNTIME" ]; then
         if command -v podman >/dev/null 2>&1; then
             CONTAINER_RUNTIME="podman"
@@ -54,16 +39,97 @@ ensure_dependencies() {
             exit 1
         fi
     fi
+
+    if [ "$CONTAINER_RUNTIME" = "podman" ] && [ "$PREFER_PODMAN_RUN" = "1" ] && [ -z "$COMPOSE_CMD_ENV" ]; then
+        COMPOSE_CMD_ARR=()
+        configure_runtime_flags
+        return
+    fi
+
+    if [ -n "$COMPOSE_CMD_ENV" ]; then
+        # shellcheck disable=SC2206
+        COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
+        configure_runtime_flags
+        return
+    fi
+
+    if command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
+        COMPOSE_CMD_ARR=(podman compose)
+        configure_runtime_flags
+        return
+    fi
+
+    if command -v podman-compose >/dev/null 2>&1; then
+        COMPOSE_CMD_ARR=(podman-compose)
+        configure_runtime_flags
+        return
+    fi
+
+    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        COMPOSE_CMD_ARR=(docker compose)
+        configure_runtime_flags
+        return
+    fi
+
+    if command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD_ARR=(docker-compose)
+        configure_runtime_flags
+        return
+    fi
+
+    log "ERROR: No compose implementation found (podman compose, podman-compose, docker compose, or docker-compose)."
+    exit 1
+}
+
+configure_runtime_flags() {
+    if [ "$CONTAINER_RUNTIME" = "podman" ]; then
+        PODMAN_VOLUME_SUFFIX=":z"
+        PODMAN_RUN_FLAGS=(--userns=keep-id)
+    else
+        PODMAN_VOLUME_SUFFIX=""
+        PODMAN_RUN_FLAGS=()
+    fi
+}
+
+ensure_image_available() {
+    if [ "$CONTAINER_RUNTIME" = "podman" ] && [ "$PREFER_PODMAN_RUN" = "1" ] && [ ${#COMPOSE_CMD_ARR[@]} -eq 0 ]; then
+        if ! "$CONTAINER_RUNTIME" image inspect "$INGEST_STATIC_IMAGE" >/dev/null 2>&1; then
+            log "Building ${INGEST_STATIC_IMAGE} image for Podman execution..."
+            (
+                cd "$PROJECT_DIR"
+                "$CONTAINER_RUNTIME" build \
+                    --build-arg APP_UID="${APP_UID:-1000}" \
+                    --build-arg APP_GID="${APP_GID:-1000}" \
+                    -f docker/Dockerfile.ingest \
+                    -t "$INGEST_STATIC_IMAGE" .
+            )
+        fi
+    else
+        (
+            cd "$PROJECT_DIR"
+            "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" build gtfs-ingest-static >/dev/null
+        )
+    fi
 }
 
 remove_via_container() {
     log "Attempting container-based cleanup for remaining snapshots..."
-    if ! (
-        cd "$PROJECT_DIR"
-        "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm --user 0:0 \
-            --entrypoint sh gtfs-ingest-static -c "set -e; rm -f ${CONTAINER_DATA_DIR}/gtfs_static_*.json"
-    ); then
-        log "WARNING: Container-based cleanup failed. Manual removal may be required."
+    if [ "$CONTAINER_RUNTIME" = "podman" ] && [ "$PREFER_PODMAN_RUN" = "1" ]; then
+        if ! "$CONTAINER_RUNTIME" run --rm "${PODMAN_RUN_FLAGS[@]}" \
+            --user 0:0 \
+            -v "${PROJECT_DIR}/data:/app/data${PODMAN_VOLUME_SUFFIX}" \
+            "$INGEST_STATIC_IMAGE" \
+            sh -c "set -e; rm -f ${CONTAINER_DATA_DIR}/gtfs_static_*.json"; then
+            log "WARNING: Podman-based cleanup failed. Manual removal may be required."
+        fi
+    else
+        if ! (
+            cd "$PROJECT_DIR"
+            "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm --user 0:0 \
+                --entrypoint sh gtfs-ingest-static -c "set -e; rm -f ${CONTAINER_DATA_DIR}/gtfs_static_*.json"
+        ); then
+            log "WARNING: Container-based cleanup failed. Manual removal may be required."
+        fi
     fi
 }
 
@@ -103,10 +169,19 @@ snapshot_list() {
 
 ingest_static() {
     log "Starting GTFS static ingestion (single run)..."
-    (
-        cd "$PROJECT_DIR"
-        "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm gtfs-ingest-static
-    )
+    if [ "$CONTAINER_RUNTIME" = "podman" ] && [ "$PREFER_PODMAN_RUN" = "1" ]; then
+        mkdir -p "$PROJECT_DIR/data" "$PROJECT_DIR/logs" "$PROJECT_DIR/configs"
+        "$CONTAINER_RUNTIME" run --rm "${PODMAN_RUN_FLAGS[@]}" \
+            -v "${PROJECT_DIR}/data:/app/data${PODMAN_VOLUME_SUFFIX}" \
+            -v "${PROJECT_DIR}/logs:/app/logs${PODMAN_VOLUME_SUFFIX}" \
+            -v "${PROJECT_DIR}/configs:/app/configs${PODMAN_VOLUME_SUFFIX}" \
+            "$INGEST_STATIC_IMAGE" --feed-type gtfs_static --once
+    else
+        (
+            cd "$PROJECT_DIR"
+            "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" run --rm gtfs-ingest-static
+        )
+    fi
     log "GTFS static ingestion finished."
 }
 
@@ -147,10 +222,7 @@ verify_result() {
 }
 
 ensure_dependencies
-(
-    cd "$PROJECT_DIR"
-    "${COMPOSE_CMD_ARR[@]}" -f "$COMPOSE_FILE" build gtfs-ingest-static >/dev/null
-)
+ensure_image_available
 mkdir -p "$DATA_DIR"
 cleanup_snapshots
 mapfile -t BEFORE_SNAPSHOTS < <(snapshot_list)

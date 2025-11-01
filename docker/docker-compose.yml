@@ -5,17 +5,10 @@
 x-common-environment: &common-environment
   PYTHONPATH: /app/src
 
-# Common volumes
-x-common-volumes: &common-volumes
-  - ../data:/app/data
-  - ../logs:/app/logs
-  - ../configs:/app/configs
-  - ../src:/app/src
-  - ../scripts:/app/scripts
-
 services:
   # GTFS Static data ingestion (short-lived task)
   gtfs-ingest-static:
+    image: tram-ingest:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.ingest
@@ -23,7 +16,12 @@ services:
         BASE_IMAGE: tram-base:latest
         APP_UID: 1000
         APP_GID: 1000
-    volumes: *common-volumes
+    volumes:
+      - ../data:/app/data:z
+      - ../logs:/app/logs:z
+      - ../configs:/app/configs:z
+      - ../src:/app/src:z
+      - ../scripts:/app/scripts:z
     environment: *common-environment
     # Single execution per container instance (Static data only)
     command: ["--feed-type", "gtfs_static", "--once"]
@@ -33,6 +31,7 @@ services:
 
   # GTFS-RT real-time data ingestion (short-lived task)
   gtfs-ingest-realtime:
+    image: tram-ingest-realtime:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.ingest-realtime
@@ -41,9 +40,9 @@ services:
         APP_UID: 1000
         APP_GID: 1000
     volumes:
-      - ../data:/app/data        
-      - ../logs:/app/logs
-      - ../configs:/app/configs
+      - ../data:/app/data:z
+      - ../logs:/app/logs:z
+      - ../configs:/app/configs:z
     environment: *common-environment
     # Single execution per container instance (RT data only)
     command: ["--feed-type", "realtime", "--once"]
@@ -53,15 +52,16 @@ services:
 
   # Simulation execution
   simulation:
+    image: tram-sim:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.sim
       args:
         BASE_IMAGE: tram-base:latest
     volumes:
-      - ../data:/app/data
-      - ../results:/app/results
-      - ../logs:/app/logs
+      - ../data:/app/data:z
+      - ../results:/app/results:z
+      - ../logs:/app/logs:z
     environment:
       - PYTHONPATH=/app/src
       - SUMO_HOME=/opt/sumo
@@ -70,16 +70,17 @@ services:
 
   # Training execution
   training:
+    image: tram-train:latest
     build:
       context: ..
       dockerfile: docker/Dockerfile.train
       args:
         BASE_IMAGE: tram-base:latest
     volumes:
-      - ../data:/app/data
-      - ../models:/app/models
-      - ../results:/app/results
-      - ../logs:/app/logs
+      - ../data:/app/data:z
+      - ../models:/app/models:z
+      - ../results:/app/results:z
+      - ../logs:/app/logs:z
     environment:
       - PYTHONPATH=/app/src
     command: ["--config", "configs/train/qddqn.yaml", "--episodes", "1000"]
