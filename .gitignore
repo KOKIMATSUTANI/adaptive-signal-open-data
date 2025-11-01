@@ -14,11 +14,11 @@ env/
 
 # --- Project artifacts ---
 /data/**
-!/data/.gitkeep
+!/data/**/.gitkeep
 /results/**
-!/results/.gitkeep
+!/results/**/.gitkeep
 /logs/**
-!/logs/.gitkeep
+!/logs/**/.gitkeep
 /checkpoints/
 /artifacts/
 /tmp/

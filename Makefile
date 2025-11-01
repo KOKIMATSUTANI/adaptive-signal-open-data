@@ -19,7 +19,7 @@ COMPOSE_FILE = docker/docker-compose.yml
 
 # Build targets
 .PHONY: build-base build-ingest build-ingest-realtime build-sim build-train build-all
-.PHONY: run-ingest-static run-ingest-realtime run-ingest-realtime-loop run-sim run-train
+.PHONY: run-ingest-static
 .PHONY: compose-ingest-realtime compose-ingest-realtime-loop compose-ingest-realtime-raw compose-sim compose-train
 .PHONY: clean help
 
@@ -46,30 +46,6 @@ build-all: build-ingest build-ingest-realtime build-sim build-train
 # Run GTFS static data ingestion once (cleans previous snapshots)
 run-ingest-static:
 	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/ingest_static_once.sh
-
-# Run GTFS-RT real-time data ingestion (short-lived task)
-run-ingest-realtime: build-ingest-realtime
-	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type realtime --once
-
-run-ingest-realtime-loop:
-	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/scheduler-realtime.sh
-
-run-ingest-realtime-raw: build-ingest-realtime
-	$(CONTAINER_RUNTIME) run --rm \
-		-e GTFS_RT_SAVE_PROTO=1 \
-		-e GTFS_STATIC_SAVE_ZIP=1 \
-		-v $(PWD)/data:/app/data \
-		-v $(PWD)/logs:/app/logs \
-		-v $(PWD)/configs:/app/configs \
-		$(INGEST_REALTIME_IMAGE) --feed-type realtime --once
-
-# Run simulation
-run-sim: build-sim
-	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/results:/app/results $(SIM_IMAGE)
-
-# Run training
-run-train: build-train
-	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/models:/app/models -v $(PWD)/results:/app/results $(TRAIN_IMAGE)
 
 # Run with Docker Compose (short-lived tasks)
 compose-ingest-realtime:
@@ -119,11 +95,6 @@ help:
 	@echo "  build-train  - Build training image"
 	@echo "  build-all    - Build all images"
 	@echo "  run-ingest-static - Run GTFS static ingestion once (ensures a single snapshot)"
-	@echo "  run-ingest-realtime - Run GTFS-RT real-time data ingestion (single execution)"
-	@echo "  run-ingest-realtime-loop - Run continuous GTFS-RT ingestion (interval=$(REALTIME_INTERVAL)s)"
-	@echo "  run-ingest-realtime-raw - Run GTFS-RT ingestion saving raw protobuf/ZIP artifacts"
-	@echo "  run-sim      - Run simulation"
-	@echo "  run-train    - Run training"
 	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with compose (single execution)"
 	@echo "  compose-ingest-realtime-loop - Run continuous GTFS-RT ingestion with compose"
 	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
