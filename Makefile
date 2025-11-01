@@ -49,6 +49,7 @@ run-ingest-static:
 
 # Run GTFS-RT real-time data ingestion (short-lived task)
 run-ingest-realtime: build-ingest-realtime
+	mkdir -p $(PWD)/data
 	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
 run-ingest-realtime-loop:
