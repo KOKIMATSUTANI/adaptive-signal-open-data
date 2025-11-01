@@ -22,6 +22,7 @@ COMPOSE_FILE = docker/docker-compose.yml
 .PHONY: run-ingest-static run-ingest-realtime run-ingest-realtime-loop run-sim run-train
 .PHONY: compose-ingest-realtime compose-ingest-realtime-loop compose-ingest-realtime-raw compose-sim compose-train
 .PHONY: clean help
+.PHONY: ensure-local-dirs
 
 # Build base image (heavy dependencies once)
 build-base:
@@ -43,19 +44,22 @@ build-train: build-base
 # Build all images
 build-all: build-ingest build-ingest-realtime build-sim build-train
 
+# Prepare host directories used by containerized tasks
+ensure-local-dirs:
+	mkdir -p $(PWD)/configs $(PWD)/data $(PWD)/logs $(PWD)/models $(PWD)/results
+
 # Run GTFS static data ingestion once (cleans previous snapshots)
-run-ingest-static:
+run-ingest-static: ensure-local-dirs
 	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/ingest_static_once.sh
 
 # Run GTFS-RT real-time data ingestion (short-lived task)
-run-ingest-realtime: build-ingest-realtime
-	mkdir -p $(PWD)/data
+run-ingest-realtime: build-ingest-realtime ensure-local-dirs
 	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/logs:/app/logs -v $(PWD)/configs:/app/configs $(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
-run-ingest-realtime-loop:
+run-ingest-realtime-loop: ensure-local-dirs
 	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/scheduler-realtime.sh
 
-run-ingest-realtime-raw: build-ingest-realtime
+run-ingest-realtime-raw: build-ingest-realtime ensure-local-dirs
 	$(CONTAINER_RUNTIME) run --rm \
 		-e GTFS_RT_SAVE_PROTO=1 \
 		-e GTFS_STATIC_SAVE_ZIP=1 \
@@ -65,34 +69,34 @@ run-ingest-realtime-raw: build-ingest-realtime
 		$(INGEST_REALTIME_IMAGE) --feed-type realtime --once
 
 # Run simulation
-run-sim: build-sim
+run-sim: build-sim ensure-local-dirs
 	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/results:/app/results $(SIM_IMAGE)
 
 # Run training
-run-train: build-train
+run-train: build-train ensure-local-dirs
 	$(CONTAINER_RUNTIME) run --rm -v $(PWD)/data:/app/data -v $(PWD)/models:/app/models -v $(PWD)/results:/app/results $(TRAIN_IMAGE)
 
 # Run with Docker Compose (short-lived tasks)
-compose-ingest-realtime:
+compose-ingest-realtime: ensure-local-dirs
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
-compose-ingest-realtime-loop:
+compose-ingest-realtime-loop: ensure-local-dirs
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime --feed-type realtime --interval $(REALTIME_INTERVAL)
 
-compose-ingest-realtime-raw:
+compose-ingest-realtime-raw: ensure-local-dirs
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 $(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
-compose-sim:
+compose-sim: ensure-local-dirs
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm simulation
 
-compose-train:
+compose-train: ensure-local-dirs
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm training
 
 # Real-time scheduler (short-lived tasks)
-scheduler-realtime:
+scheduler-realtime: ensure-local-dirs
 	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/scheduler-realtime.sh
 
-scheduler-realtime-once:
+scheduler-realtime-once: ensure-local-dirs
 	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) COMPOSE_CMD="$(COMPOSE_CMD)" ./scripts/scheduler-realtime.sh --once
 
 # Cron-based real-time data collection
