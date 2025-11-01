@@ -11,7 +11,7 @@ TRAIN_IMAGE = tram-train:latest
 REALTIME_INTERVAL ?= 20
 
 # Container runtime configuration (override with CONTAINER_RUNTIME=podman etc.)
-CONTAINER_RUNTIME ?= podman
+CONTAINER_RUNTIME ?= docker
 COMPOSE_CMD ?= $(CONTAINER_RUNTIME) compose
 
 # Docker Compose configuration
