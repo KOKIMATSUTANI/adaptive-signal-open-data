@@ -20,8 +20,10 @@ COMPOSE_FILE = docker/docker-compose.yml
 # Build targets
 .PHONY: build-base build-ingest build-ingest-realtime build-sim build-train build-all
 .PHONY: run-ingest-static
-.PHONY: compose-ingest-realtime compose-ingest-realtime-loop compose-ingest-realtime-raw compose-sim compose-train
+.PHONY: compose-ingest-realtime compose-ingest-realtime-loop compose-ingest-realtime-raw stop-realtime-loop
+.PHONY: compose-sim compose-train
 .PHONY: clean help
+
 
 # Build base image (heavy dependencies once)
 build-base:
@@ -53,6 +55,12 @@ compose-ingest-realtime:
 
 compose-ingest-realtime-loop:
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime --feed-type realtime --interval $(REALTIME_INTERVAL) 
+
+stop-realtime-loop:
+	@echo "🛑 Stopping GTFS-RT realtime loop containers..."
+	@docker ps -q --filter "name=gtfs-ingest-realtime" | xargs -r docker stop
+	@echo "✅ All GTFS-RT realtime loop containers stopped."
+
 
 compose-ingest-realtime-raw:
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 $(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
@@ -97,6 +105,7 @@ help:
 	@echo "  run-ingest-static - Run GTFS static ingestion once (ensures a single snapshot)"
 	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with compose (single execution)"
 	@echo "  compose-ingest-realtime-loop - Run continuous GTFS-RT ingestion with compose"
+	@echo "  stop-realtime-loop - for cron configuration"
 	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
 	@echo "  compose-sim  - Run simulation with compose"
 	@echo "  compose-train - Run training with compose"
