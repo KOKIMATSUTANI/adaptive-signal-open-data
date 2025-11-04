@@ -29,7 +29,7 @@ services:
     profiles:
       - manual  # Run manually or via scheduler
 
-  # GTFS-RT real-time data ingestion (short-lived task)
+  # GTFS-RT realtime data ingestion (short-lived task)
   gtfs-ingest-realtime:
     image: tram-ingest-realtime:latest
     build:
