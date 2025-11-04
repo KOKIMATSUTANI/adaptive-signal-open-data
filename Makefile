@@ -105,6 +105,7 @@ help:
 	@echo "  run-ingest-static - Run GTFS static ingestion once (ensures a single snapshot)"
 	@echo "  compose-ingest-realtime - Run GTFS-RT real-time ingestion with compose (single execution)"
 	@echo "  compose-ingest-realtime-loop - Run continuous GTFS-RT ingestion with compose"
+	@echo "  stop-realtime-loop - for cron configuration"
 	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
 	@echo "  compose-sim  - Run simulation with compose"
 	@echo "  compose-train - Run training with compose"
