@@ -11,16 +11,12 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 DATA_DIR="${DATA_DIR:-$PROJECT_DIR/data/raw}"
 CONTAINER_DATA_DIR="${CONTAINER_DATA_DIR:-/app/data/raw}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker/docker-compose.yml}"
-CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-}"
+CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 COMPOSE_CMD_ENV="${COMPOSE_CMD:-}"
 COMPOSE_CMD_ARR=()
 CLEAN_PREVIOUS=${CLEAN_PREVIOUS:-0}
 BEFORE_SNAPSHOTS=()
 INGEST_STATIC_IMAGE="${INGEST_STATIC_IMAGE:-tram-ingest:latest}"
-PREFER_PODMAN_RUN=${PREFER_PODMAN_RUN:-1}
-# Export PREFER_PODMAN_RUN=0 to force compose-based execution even with Podman.
-PODMAN_VOLUME_SUFFIX=""
-PODMAN_RUN_FLAGS=()
 APP_UID="${APP_UID:-1000}"
 APP_GID="${APP_GID:-1000}"
 
@@ -29,66 +25,34 @@ log() {
 }
 
 ensure_dependencies() {
-    if [ -z "$CONTAINER_RUNTIME" ]; then
-        if command -v podman >/dev/null 2>&1; then
-            CONTAINER_RUNTIME="podman"
-        elif command -v docker >/dev/null 2>&1; then
-            CONTAINER_RUNTIME="docker"
-        else
-            log "ERROR: No container runtime found (podman or docker)."
-            exit 1
-        fi
+    if [ "$CONTAINER_RUNTIME" != "docker" ]; then
+        log "ERROR: Only docker is supported. Set CONTAINER_RUNTIME=docker."
+        exit 1
     fi
 
-    if [ "$CONTAINER_RUNTIME" = "podman" ] && [ "$PREFER_PODMAN_RUN" = "1" ] && [ -z "$COMPOSE_CMD_ENV" ]; then
-        COMPOSE_CMD_ARR=()
-        configure_runtime_flags
-        return
+    if ! command -v docker >/dev/null 2>&1; then
+        log "ERROR: Docker CLI not found. Install Docker before running this script."
+        exit 1
     fi
 
     if [ -n "$COMPOSE_CMD_ENV" ]; then
         # shellcheck disable=SC2206
         COMPOSE_CMD_ARR=($COMPOSE_CMD_ENV)
-        configure_runtime_flags
         return
     fi
 
-    if command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
-        COMPOSE_CMD_ARR=(podman compose)
-        configure_runtime_flags
-        return
-    fi
-
-    if command -v podman-compose >/dev/null 2>&1; then
-        COMPOSE_CMD_ARR=(podman-compose)
-        configure_runtime_flags
-        return
-    fi
-
-    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    if docker compose version >/dev/null 2>&1; then
         COMPOSE_CMD_ARR=(docker compose)
-        configure_runtime_flags
         return
     fi
 
     if command -v docker-compose >/dev/null 2>&1; then
         COMPOSE_CMD_ARR=(docker-compose)
-        configure_runtime_flags
         return
     fi
 
-    log "ERROR: No compose implementation found (podman compose, podman-compose, docker compose, or docker-compose)."
+    log "ERROR: Docker Compose not available (docker compose or docker-compose)."
     exit 1
-}
-
-configure_runtime_flags() {
-    if [ "$CONTAINER_RUNTIME" = "podman" ]; then
-        PODMAN_VOLUME_SUFFIX=":z"
-        PODMAN_RUN_FLAGS=(--userns=keep-id)
-    else
-        PODMAN_VOLUME_SUFFIX=""
-        PODMAN_RUN_FLAGS=()
-    fi
 }
 
 ensure_image_available() {
