@@ -54,13 +54,10 @@ compose-ingest-realtime:
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
 compose-ingest-realtime-loop:
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime --feed-type realtime --interval $(REALTIME_INTERVAL) 
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run gtfs-ingest-realtime --feed-type realtime --interval $(REALTIME_INTERVAL) 
 
 stop-realtime-loop:
-	@echo "🛑 Stopping GTFS-RT realtime loop containers..."
-	@docker ps -q --filter "name=gtfs-ingest-realtime" | xargs -r docker stop
-	@echo "✅ All GTFS-RT realtime loop containers stopped."
-
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) stop gtfs-ingest-realtime 
 
 compose-ingest-realtime-raw:
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 $(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
