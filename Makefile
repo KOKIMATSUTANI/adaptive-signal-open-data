@@ -8,6 +8,8 @@ INGEST_IMAGE = tram-ingest:latest
 INGEST_REALTIME_IMAGE = tram-ingest-realtime:latest
 SIM_IMAGE = tram-sim:latest
 TRAIN_IMAGE = tram-train:latest
+RUN_DATE := $(shell date +%Y%m%d)
+INGEST_RT_CONTAINER_NAME := gtfs-ingest-realtime_$(RUN_DATE)
 REALTIME_INTERVAL ?= 20
 
 # Container runtime configuration (override with CONTAINER_RUNTIME=podman etc.)
@@ -51,13 +53,14 @@ run-ingest-static:
 
 # Run with Docker Compose (short-lived tasks)
 compose-ingest-realtime:
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run -e RUN_DATE=$(RUN_DATE) --rm gtfs-ingest-realtime
 
 compose-ingest-realtime-loop:
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run gtfs-ingest-realtime --feed-type realtime --interval $(REALTIME_INTERVAL) 
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d gtfs-ingest-realtime 
+
 
 stop-realtime-loop:
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) stop gtfs-ingest-realtime 
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) rm -fs gtfs-ingest-realtime
 
 compose-ingest-realtime-raw:
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 $(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
@@ -95,6 +98,8 @@ help:
 	@echo "Available targets:"
 	@echo "  build-base   - Build base image (heavy dependencies)"
 	@echo "  build-ingest - Build GTFS Static ingestion image (short-lived task)"
+	@echo "  build-base   - Build base image (heavy dependencies)"
+	@echo "  build-ingest - Build GTFS Static ingestion image (short-lived task)"
 	@echo "  build-ingest-realtime - Build GTFS-RT real-time ingestion image (continuous)"
 	@echo "  build-sim    - Build simulation image"
 	@echo "  build-train  - Build training image"
@@ -111,5 +116,3 @@ help:
 	@echo "  cron-setup   - Setup system cron for real-time data collection"
 	@echo "  cron-remove  - Remove system cron jobs"
 	@echo "  cron-show    - Show current cron jobs"
-	@echo "  clean        - Clean up images"
-	@echo "  help         - Show this help"

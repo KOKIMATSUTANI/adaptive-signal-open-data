@@ -37,7 +37,7 @@ ENV PATH="/home/appuser/.local/bin:${PATH}"
 # Short-lived task execution
 # Single execution per container instance (RT data only)
 ENTRYPOINT ["python", "-m", "src.gtfs_pipeline.cli", "ingest"]
-CMD ["--feed-type", "realtime", "--once"]
+CMD ["--feed-type", "realtime"]
 
 # Usage examples:
 # Single execution (short-lived task):

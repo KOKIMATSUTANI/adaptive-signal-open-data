@@ -4,6 +4,7 @@
 # Common environment variables
 x-common-environment: &common-environment
   PYTHONPATH: /app/src
+  RUN_DATE: $(RUN_DATE)
 
 services:
   # GTFS Static data ingestion (short-lived task)
@@ -29,8 +30,8 @@ services:
     profiles:
       - manual  # Run manually or via scheduler
 
-  # GTFS-RT realtime data ingestion 
-  gtfs-ingest-realtime:
+  # GTFS-RT realtime data ingestion(test) 
+  gtfs-ingest-realtime-test:
     image: tram-ingest-realtime:latest
     build:
       context: ..
@@ -50,6 +51,25 @@ services:
     profiles:
       - manual  # Run manually or via scheduler
 
+  # GTFS-RT realtime data ingestion(loop) 
+  gtfs-ingest-realtime:
+    image: tram-ingest-realtime:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ingest-realtime
+      args:
+        BASE_IMAGE: tram-base:latest
+        APP_UID: 1000
+        APP_GID: 1000
+    volumes:
+      - ../data:/app/data:z
+      - ../logs:/app/logs:z
+      - ../configs:/app/configs:z
+    environment: *common-environment
+    # Single execution per container instance (RT data only)
+    restart: unless-stopped  
+    profiles:
+      - manual  # Run manually or via scheduler
   # Simulation execution
   simulation:
     image: tram-sim:latest
