@@ -1,58 +1,23 @@
-# docker/Dockerfile.sim
-# SUMO/FLOW simulation only
-# Isolate SIM-specific additional dependencies (SUMO, FLOW, OS packages). Prevent heavy/specialized dependencies from affecting other jobs
-ARG BASE_IMAGE=tram-base:latest
+# SUMO GUI container – extends tram-sumo-base:latest
+ARG BASE_IMAGE=tram-sumo-base:latest
 FROM ${BASE_IMAGE}
 
-# Switch to root for system package installation
 USER root
 
-# OS dependencies for SUMO/FLOW (isolate heavy and specialized dependencies)
+# Install GUI/X11-specific runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      # SUMO dependencies
-      libxerces-c-dev \
-      libproj-dev \
-      libfox-1.6-dev \
-      libgdal-dev \
-      libgl2ps-dev \
-      libglu1-mesa-dev \
-      # FLOW dependencies
-      libgl1-mesa-glx \
-      libglib2.0-0 \
-      # Other SIM dependencies
-      build-essential \
-      cmake \
-      pkg-config \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libxrender1 \
+    libxi6 \
+    libxtst6 \
+    libfontconfig1 \
+    xauth \
+    x11-apps \
+    && rm -rf /var/lib/apt/lists/*
 
-# SUMO installation
-ENV SUMO_HOME=/opt/sumo
-RUN wget -q https://github.com/eclipse/sumo/releases/download/v1.18.0/sumo-all-1.18.0.tar.gz \
-    && tar -xzf sumo-all-1.18.0.tar.gz \
-    && mv sumo-1.18.0 /opt/sumo \
-    && rm sumo-all-1.18.0.tar.gz
-ENV PATH="${SUMO_HOME}/bin:${PATH}"
-
-# Switch back to appuser
 USER appuser
+WORKDIR /app
 
-# Python dependencies for SIM only
-COPY requirements/sim.txt /tmp/requirements-sim.txt
-RUN pip install -r /tmp/requirements-sim.txt \
-    && rm /tmp/requirements-sim.txt
-
-# Copy simulation code
-COPY src/simulation/ ./src/simulation/
-COPY configs/sim/ ./configs/sim/
-
-# Volume for simulation results
-VOLUME ["/app/results"]
-
-# Run simulation
-ENTRYPOINT ["python", "-m", "src.simulation.runner"]
-CMD ["--config", "configs/sim/default.yaml"]
-
-# Usage examples:
-# docker run --rm -v /host/results:/app/results tram-sim:latest
-# docker run --rm -v /host/results:/app/results tram-sim:latest --scenario toyama_tram
+# Entrypoint for SUMO GUI
+ENTRYPOINT ["sumo-gui"]

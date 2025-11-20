@@ -11,6 +11,7 @@ __pycache__/
 venv/
 .venv/
 env/
+pydeps-env/
 
 # --- Project artifacts ---
 /data/**
@@ -49,8 +50,13 @@ logs/**/*.pb
 *.edge.xml
 *.node.xml
 *.poly.xml
+*result.xml
+*.sumocfg
 sumo_output/
 flow_output/
+*.osm
+*.pbf
+*.geojson
 
 # --- Docker related ---
 docker/*.log

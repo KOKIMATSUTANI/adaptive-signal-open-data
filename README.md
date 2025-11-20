@@ -51,7 +51,7 @@ CONTAINER_RUNTIME=podman COMPOSE_CMD="podman compose" make run-ingest-static
 ## Directory Structure
 
 ```
-adptive-signal-open-data/
+adaptive-signal-open-data/
 ├── configs/                # Configuration templates (ingestion, simulation)
 ├── data/                   # Local storage layers for collected feeds
 │   ├── bronze/

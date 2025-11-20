@@ -50,6 +50,21 @@ services:
     profiles:
       - manual  # Run manually or via scheduler
 
+  # SUMO installation service for building the image
+  SUMO-tutorial:
+    image: ghcr.io/eclipse-sumo/sumo:latest
+    volumes:
+      - ../src/sim_bridge/sumo-projs/sumotutorial:/data           # Mounts local simulation data folder into container
+      - /tmp/.X11-unix:/tmp/.X11-unix   # X11 socket for GUI display forwarding
+    environment:
+      - DISPLAY=${DISPLAY}              # Passes host DISPLAY environment variable for X11
+      - QT_X11_NO_MITSHM=1              # Prevents shared memory errors for Qt X11
+      - XAUTHORITY=${XAUTHORITY}        # Passes X11 authentication file path
+    command: sumo-gui /data/hello.sumocfg   # Starts SUMO GUI with simulation config
+    working_dir: /data
+    stdin_open: true                    # Keeps STDIN open even if not attached (equivalent to -i)
+    tty: true                           # Allocates a pseudo-TTY (equivalent to -t)
+
   # Simulation execution
   simulation:
     image: tram-sim:latest

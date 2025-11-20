@@ -21,7 +21,7 @@ COMPOSE_FILE = docker/docker-compose.yml
 .PHONY: build-base build-ingest build-ingest-realtime build-sim build-train build-all
 .PHONY: run-ingest-static
 .PHONY: compose-ingest-realtime compose-ingest-realtime-loop compose-ingest-realtime-raw stop-realtime-loop
-.PHONY: compose-sim compose-train
+.PHONY: compose-sumo-tutorial compose-sim compose-train
 .PHONY: clean help
 
 
@@ -65,6 +65,9 @@ stop-realtime-loop:
 compose-ingest-realtime-raw:
 	GTFS_RT_SAVE_PROTO=1 GTFS_STATIC_SAVE_ZIP=1 $(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm gtfs-ingest-realtime
 
+compose-sumo-tutorial:
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d --build SUMO-tutorial
+
 compose-sim:
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) run --rm simulation
 
@@ -107,6 +110,7 @@ help:
 	@echo "  compose-ingest-realtime-loop - Run continuous GTFS-RT ingestion with compose"
 	@echo "  stop-realtime-loop - for cron configuration"
 	@echo "  compose-ingest-realtime-raw - Same as above with raw protobuf/ZIP archiving enabled"
+	@echo "  compose-sumo-tutorial - Run SUMO tutorial via compose with GUI"
 	@echo "  compose-sim  - Run simulation with compose"
 	@echo "  compose-train - Run training with compose"
 	@echo "  scheduler-realtime - Run real-time scheduler (RT data every 20s)"
